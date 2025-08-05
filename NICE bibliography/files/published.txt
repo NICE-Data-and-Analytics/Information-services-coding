@@ -1,0 +1,11 @@
+Link	Title	Reference number	Published	Last updated
+https://www.nice.org.uk/guidance/ta911	Selpercatinib for untreated RET fusion-positive advanced non-small-cell lung cancer	TA911	26 July 2023	26 July 2023
+https://www.nice.org.uk/guidance/ta909	Lorlatinib for untreated ALK-positive advanced non-small-cell lung cancer	TA909	12 July 2023	12 July 2023
+https://www.nice.org.uk/guidance/ta898	Dabrafenib plus trametinib for treating BRAF V600 mutation-positive advanced non-small-cell lung cancer	TA898	14 June 2023	14 June 2023
+https://www.nice.org.uk/guidance/ta884	Capmatinib for treating advanced non-small-cell lung cancer with MET exon 14 skipping (terminated appraisal)	TA884	3 May 2023	3 May 2023
+https://www.nice.org.uk/guidance/ta876	Nivolumab with chemotherapy for neoadjuvant treatment of resectable non-small-cell lung cancer	TA876	22 March 2023	22 March 2023
+https://www.nice.org.uk/guidance/ta855	Mobocertinib for treating EGFR exon 20 insertion mutation-positive advanced non-small-cell lung cancer after platinum-based chemotherapy	TA855	4 January 2023	4 January 2023
+https://www.nice.org.uk/guidance/ta850	Amivantamab for treating EGFR exon 20 insertion mutation-positive advanced non-small-cell lung cancer after platinum-based chemotherapy	TA850	14 December 2022	14 December 2022
+https://www.nice.org.uk/guidance/ta848	Cemiplimab for untreated PD-L1-positive advanced or metastatic non-small-cell lung cancer (terminated appraisal)	TA848	1 December 2022	1 December 2022
+https://www.nice.org.uk/guidance/ta823	Atezolizumab for adjuvant treatment of resected non-small-cell lung cancer	TA823	28 September 2022	28 September 2022
+https://www.nice.org.uk/guidance/ta812	Pralsetinib for treating RET fusion-positive advanced non-small-cell lung cancer	TA812	3 August 2022	3 August 2022

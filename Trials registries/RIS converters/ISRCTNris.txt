@@ -1,0 +1,187 @@
+TY  - DBASE
+TI  - Trial to investigate if the addition of two novel immunotherapy agents in combination with a chemotherapy agent can reduce the size of the cancer and how long they can delay the growth of the cancer in patients with metastatic pancreatic cancer.
+DO  - https://dx.doi.org/10.1186/ISRCTN53212600
+AB  - THIS IS A TRIALS REGISTY RECORD. 
+STATUS: Ongoing. This may not be reflective of the actual state of the trial. 
+STUDY DESIGN: Interventional. 
+CONDITION(S): Metastatic pancreatic cancer. 
+INTERVENTION(S): Biological/Vaccine: Gemcitabine, pembrolizumab (MK-3475) and IMM-101. 
+PHASE: Phase II. 
+EST PARTICIPANTS: 50. 
+FINAL ENROLMENT: NA. 
+COUNTRY: United Kingdom; England; Scotland. 
+TRIAL END DATE: 01/12/2026.
+JF  - ISRCTN
+UR  - https://www.isrctn.com/ISRCTN53212600
+ER  - 
+
+TY  - DBASE
+TI  - Understanding the usefulness of the PEAR-BIO platform in patients with kidney cancer
+DO  - https://dx.doi.org/10.1186/ISRCTN10001405
+AB  - THIS IS A TRIALS REGISTY RECORD. 
+STATUS: Completed. This may not be reflective of the actual state of the trial. 
+STUDY DESIGN: Observational. 
+CONDITION(S): Patients undergoing surgery for renal cell carcinoma. 
+INTERVENTION(S): Device: Ipilimumab, nivolumab, axitinib, pembrolizumab, cabozantinib, lenvatinib, pazopanib, sunitinib, sorafenib, everolimus, sapanisertib. 
+PHASE: Not Applicable. 
+EST PARTICIPANTS: 20. 
+FINAL ENROLMENT: NA. 
+COUNTRY: United Kingdom; England. 
+TRIAL END DATE: 31/03/2023.
+JF  - ISRCTN
+UR  - https://www.isrctn.com/ISRCTN10001405
+ER  - 
+
+TY  - DBASE
+TI  - LION: lifting immune checkpoints with NSAIDs
+DO  - https://dx.doi.org/10.1186/ISRCTN73037722
+AB  - THIS IS A TRIALS REGISTY RECORD. 
+STATUS: Ongoing. This may not be reflective of the actual state of the trial. 
+STUDY DESIGN: Interventional. 
+CONDITION(S): Triple-negative breast cancer (TNBC), non-small cell lung cancer (NSCLC), renal cell carcinoma (RCC). 
+INTERVENTION(S): Drug: Celecoxib, atezolizumab, nab-paclitaxel, pembrolizumab, nivolumab, ipilimumab. 
+PHASE: Phase II. 
+EST PARTICIPANTS: 89. 
+FINAL ENROLMENT: NA. 
+COUNTRY: United Kingdom; England. 
+TRIAL END DATE: 03/06/2026.
+JF  - ISRCTN
+UR  - https://www.isrctn.com/ISRCTN73037722
+ER  - 
+
+TY  - DBASE
+TI  - Study of DS-1062a with or without pembrolizumab in advanced or metastatic non-small cell lung cancer
+DO  - https://dx.doi.org/10.1186/ISRCTN24189848
+AB  - THIS IS A TRIALS REGISTY RECORD. 
+STATUS: Ongoing. This may not be reflective of the actual state of the trial. 
+STUDY DESIGN: Interventional. 
+CONDITION(S): Advanced or metastatic non-small cell lung cancer (NSCLC). 
+INTERVENTION(S): Drug: Datopotamab deruxtecan, pembrolizumab. 
+PHASE: Phase III. 
+EST PARTICIPANTS: 740. 
+FINAL ENROLMENT: NA. 
+COUNTRY: Argentina; Australia; Belgium; Brazil; Canada; Chile; China; France; Germany; Greece; Hong Kong; Hungary; Italy; Japan; Mexico; Netherlands; Poland; Portugal; Romania; Russian Federation; Spain; Switzerland; Taiwan; Thailand; Turkey; Ukraine; United Kingdom; England; Scotland. 
+TRIAL END DATE: 31/05/2025.
+JF  - ISRCTN
+UR  - https://www.isrctn.com/ISRCTN24189848
+ER  - 
+
+TY  - DBASE
+TI  - Pembrolizumab plus chemotherapy for diffuse large B-cell lymphoma that has come back or does not respond to treatment
+DO  - https://dx.doi.org/10.1186/ISRCTN86607306
+AB  - THIS IS A TRIALS REGISTY RECORD. 
+STATUS: Ongoing. This may not be reflective of the actual state of the trial. 
+STUDY DESIGN: Interventional. 
+CONDITION(S): Relapsed/refractory diffuse large B-cell lymphoma. 
+INTERVENTION(S): Drug: Pembrolizumab, rituximab, ifosfamide, carboplatin, etoposide. 
+PHASE: Phase II. 
+EST PARTICIPANTS: 65. 
+FINAL ENROLMENT: NA. 
+COUNTRY: United Kingdom; England. 
+TRIAL END DATE: 31/12/2026.
+JF  - ISRCTN
+UR  - https://www.isrctn.com/ISRCTN86607306
+ER  - 
+
+TY  - DBASE
+TI  - A research study to investigate the safety of setanaxib and helpfulness in the treatment of recurrent or metastatic squamous cell carcinoma of the head and neck
+DO  - https://dx.doi.org/10.1186/ISRCTN63646763
+AB  - THIS IS A TRIALS REGISTY RECORD. 
+STATUS: Ongoing. This may not be reflective of the actual state of the trial. 
+STUDY DESIGN: Interventional. 
+CONDITION(S): Recurrent or metastatic squamous cell carcinoma of the head and neck. 
+INTERVENTION(S): Drug: Setanaxib, pembrolizumb. 
+PHASE: Phase II. 
+EST PARTICIPANTS: 60. 
+FINAL ENROLMENT: NA. 
+COUNTRY: France; Germany; Italy; Poland; Spain; United Kingdom; England; United States of America. 
+TRIAL END DATE: 30/06/2024.
+JF  - ISRCTN
+UR  - https://www.isrctn.com/ISRCTN63646763
+ER  - 
+
+TY  - DBASE
+TI  - A study evaluating single-agent inavolisib and inavolisib plus atezolizumab in PIK3CA-mutated cancers
+DO  - https://dx.doi.org/10.1186/ISRCTN11595117
+AB  - THIS IS A TRIALS REGISTY RECORD. 
+STATUS: Ongoing. This may not be reflective of the actual state of the trial. 
+STUDY DESIGN: Interventional. 
+CONDITION(S): PIK3CA-mutated solid cancers including previously treated recurrent or metastatic HNSCC. 
+INTERVENTION(S): Drug: Inavolisib, atezolizumab. 
+PHASE: Phase I. 
+EST PARTICIPANTS: 40. 
+FINAL ENROLMENT: NA. 
+COUNTRY: Canada; France; Spain; United Kingdom; United States of America. 
+TRIAL END DATE: 01/04/2025.
+JF  - ISRCTN
+UR  - https://www.isrctn.com/ISRCTN11595117
+ER  - 
+
+TY  - DBASE
+TI  - Testing IMM60 in combination with pembrolizumab in melanoma and non-small cell lung cancer
+DO  - https://dx.doi.org/10.1186/ISRCTN80472712
+AB  - THIS IS A TRIALS REGISTY RECORD. 
+STATUS: Ongoing. This may not be reflective of the actual state of the trial. 
+STUDY DESIGN: Interventional. 
+CONDITION(S): Malignant neoplasms of respiratory and intrathoracic organs, Melanoma and other malignant neoplasms of skin. 
+INTERVENTION(S): Drug: IMM60, pembrolizumab. 
+PHASE: Phase I. 
+EST PARTICIPANTS: 12. 
+FINAL ENROLMENT: NA. 
+COUNTRY: United Kingdom; England. 
+TRIAL END DATE: 31/12/2023.
+JF  - ISRCTN
+UR  - https://www.isrctn.com/ISRCTN80472712
+ER  - 
+
+TY  - DBASE
+TI  - A trial to see the effect of cyclophosphamide and pembrolizumab on cancer in the kidney that has spread further into the body
+DO  - https://dx.doi.org/10.1186/ISRCTN95900287
+AB  - THIS IS A TRIALS REGISTY RECORD. 
+STATUS: Ongoing. This may not be reflective of the actual state of the trial. 
+STUDY DESIGN: Interventional. 
+CONDITION(S): Metastatic renal cell carcinoma. 
+INTERVENTION(S): Drug: Cyclophosphamide, pembrolizumab. 
+PHASE: Phase I. 
+EST PARTICIPANTS: 21. 
+FINAL ENROLMENT: NA. 
+COUNTRY: United Kingdom; England; Scotland. 
+TRIAL END DATE: 28/04/2024.
+JF  - ISRCTN
+UR  - https://www.isrctn.com/ISRCTN95900287
+ER  - 
+
+TY  - DBASE
+TI  - DANTE: Duration of Anti-PD1 therapy for melanoma
+DO  - https://dx.doi.org/10.1186/ISRCTN15837212
+AB  - THIS IS A TRIALS REGISTY RECORD. 
+STATUS: Ongoing. This may not be reflective of the actual state of the trial. 
+STUDY DESIGN: Interventional. 
+CONDITION(S): Metastatic melanoma. 
+INTERVENTION(S): Other. 
+PHASE: Phase IV. 
+EST PARTICIPANTS: 1208. 
+FINAL ENROLMENT: NA. 
+COUNTRY: United Kingdom; England; Northern Ireland; Scotland; Wales. 
+TRIAL END DATE: 15/10/2024.
+JF  - ISRCTN
+UR  - https://www.isrctn.com/ISRCTN15837212
+ER  - 
+
+TY  - DBASE
+TI  - PARIS-Pembrolizumab in combination with radiotherapy in locally advanced non-small cell lung cancer (NSCLC)
+DO  - https://dx.doi.org/10.1186/ISRCTN14634058
+AB  - THIS IS A TRIALS REGISTY RECORD. 
+STATUS: Stopped. This may not be reflective of the actual state of the trial. 
+STUDY DESIGN: Interventional. 
+CONDITION(S): Lung Cancer. 
+INTERVENTION(S): Other. 
+PHASE: Phase I. 
+EST PARTICIPANTS: 25. 
+FINAL ENROLMENT: NA. 
+COUNTRY: England; United Kingdom. 
+TRIAL END DATE: 31/12/2020.
+JF  - ISRCTN
+UR  - https://www.isrctn.com/ISRCTN14634058
+ER  - 
+

@@ -1,0 +1,215 @@
+---
+output: word_document
+params:
+  report.data: NA
+  table: [some object]
+---
+
+```{r link chunk, echo=FALSE, message=FALSE, warning=FALSE}
+    knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+
+library(dplyr)
+library(knitr)
+library(tidyverse)
+library(kableExtra)
+library(readr)
+
+# Code that creates list of text file names from working directory to input into our script later
+
+text_files <- list.files(path = ".", pattern = "\\.txt$")
+
+# Add 'for n in text files' loop? Works now but needs Knitting twice.
+
+# Code that reads in file (tab delimited) - line 25 is specifying that the file to read in is the first item in the list of text files. We'll delete this at the end so if the script runs again the next file in the list will be read in
+
+df <- read_delim(text_files[1], delim = "\t", 
+       quote = "\\\"", escape_double = FALSE, 
+       trim_ws = TRUE, skip = 0)
+
+# This section defines two functions - one reformats "in development" text files, the other reformats "published" text files. 
+
+reformat_in_development <- function(df, `Expected publication date`, Title, ID, Medtech_ID, Link, Type, Merged) {
+  
+df <- df %>%
+      
+# The following code strips days from Expected publication date column...
+    
+  mutate(`Expected publication date` = 
+    str_remove_all(`Expected publication date`, "[:digit:][:digit:] |[:digit:] ")) %>%
+      
+# Code finds titles that contain TA IDs and copy them to a new 'ID column'.
+# Starting from the assumption that the actual ID number is now at the end of the ID column it
+# Removes punctuation and letters from ID column (leaving white space),then  extracts the cluster of digits at the end of the string and adds square brackets and 'ID'. 
+# For example, if a guideline is 'ABC123 for Covid-19. NICE TA456' it will be turned into '123 19 456', then the last set of digits will be picked out ('456') 
+      
+  mutate(ID = case_when(
+      str_ends(Title, "\\]|ID[:digit:]+$|TS ID [:digit:]+$") == TRUE ~ Title)) %>%
+  mutate(ID = str_remove_all(ID, "[:punct:]|[:alpha:]")) %>%
+  mutate(ID = str_extract_all(ID, "[:digit:]+$")) %>%
+  mutate(ID = case_when(
+    str_starts(ID, "\\d") == TRUE ~ paste0(" [ID", ID, "]"))
+            ) %>%
+    
+# Similar idea for Medtech products which have and ID in the title. Sometimes these start with 'GID-MT...', and somethings they end with '(MT123)'.
+      
+# The code copies titles into a new 'Medtech_ID' column, then strips out the numbers and add surrounding text - '[MT...]'.
+      
+  mutate(Medtech_ID = case_when(
+          str_starts(Title, "GID-MT[:digit:]+ ") == TRUE ~ Title, 
+          str_ends(Title, " \\(MT[:digit:]+\\)$") == TRUE ~ Title)
+          )  %>%
+  mutate(Medtech_ID = str_extract(Medtech_ID, "MT[:number:]+")) %>%
+  mutate(Medtech_ID = case_when(
+          is.na(Medtech_ID) == FALSE ~ paste0(" [", Medtech_ID, "]"))
+          )  %>%
+    
+# Code removes IDs and Medtech IDs from title field because we've now got them in their own column...
+      
+  mutate(Title = case_when(
+          str_ends(Title, "\\]|ID[:digit:]+$|TS ID [:digit:]+$|  \\[[:digit:]+\\]$") == TRUE ~ str_remove_all(Title, " TS ID.+$| \\[ID.+$| ID[:digit:]+$| \\[[:digit:]+\\]$"),
+          str_starts(Title, "GID-MT[:digit:]+ ") == TRUE ~ str_remove(Title, "GID-MT[:digit:]+ "), 
+          str_ends(Title, " \\(MT[:digit:]+\\)$") == TRUE ~ str_remove(Title, " \\(MT[:digit:]+\\)$"),
+        .default = Title)) %>%
+        
+# Code to add markup to turn titles into hyperlinks
+      
+  mutate(Link = str_replace(Link, "^", "(")) %>%
+  mutate(Link = str_replace(Link, "$", ")")) %>%
+  mutate(Title = str_replace(Title, "^", "[")) %>%
+  mutate(Title = str_replace(Title, "$", "]")) %>%
+    
+# Some entries are split across two rows for reasons that we don't understand. The next chunk of code is designed to identify these and add a note that they need manually checking.
+    
+  mutate(Link = case_when(
+          str_starts(Link, "\\(http") == TRUE ~ Link,
+          str_starts(Link, "\\(http") == FALSE ~ "**MANUALLY CHECK THIS LINE AND THE ONE ABOVE**")) %>%
+      
+# Unite is used to merge title and links in title field...
+      
+  unite(Title, Title, Link, sep = "", na.rm=TRUE) %>%
+      
+# Code to put the word "NICE" at the start of the 'Type' column, if it isn't there already. Whole column is converted to lower case first so that product type appears in lower case in the final Word doc.
+      
+  mutate(Type = str_to_lower(Type))  %>%
+  mutate(Type = case_when(
+        str_starts(Type, "nice") == TRUE ~ str_replace(Type, "nice", ". NICE"),
+        str_starts(Type, "NICE") == FALSE ~ paste(". NICE ", Type, sep = ""),
+        .default = Title)) %>%
+    
+# This bit adds the required text before expected publication date.  
+    
+  mutate(`Expected publication date` = case_when(
+          str_ends(`Expected publication date`, "TBC") == TRUE ~ paste(". Publication date to be confirmed"),
+          str_ends(`Expected publication date`, "TBC") == FALSE ~ paste(". Publication expected", `Expected publication date`, sep = " "))) %>%
+    
+# Code creates a single 'Merged' column that runs together all required fields, then remove other columns from dataframe.
+    
+  unite(Merged, Title, Type, ID, Medtech_ID, `Expected publication date`, sep = "", na.rm = TRUE)
+}
+
+
+reformat_published <- function(df, Link, Title, `Reference number`, Published, `Last updated`, Merged) {
+  df <- df %>%
+  
+# To create our titles with links this code: 
+# Adds brackets to the start and end of the existing URLs,
+# Adds square brackets to the titles
+# Merges the two columns with unite.
+  
+  mutate(Link = str_replace(Link, "^", "(")) %>%
+  mutate(Link = str_replace(Link, "$", ")")) %>%
+  mutate(Title = str_replace(Title, "^", "[")) %>%
+  mutate(Title = str_replace(Title, "$", "]")) %>%
+  unite(Title, Title, Link, sep = "", na.rm=TRUE) %>%
+    
+# "NICE guideline NG/CG/QS/TA.." is added before the reference number 
+# e.g. NG215 will become "NICE guideline NG215"
+    
+  mutate(`Reference number` = str_replace_all(`Reference number`, "^NG", "NICE guideline NG"))%>%
+  mutate(`Reference number` = str_replace_all(`Reference number`, "^CG", "NICE guideline CG"))%>%
+  mutate(`Reference number` = str_replace_all(`Reference number`, "^QS", "NICE quality standard "))%>%
+  mutate(`Reference number` = str_replace_all(`Reference number`, "^TA", "NICE technology appraisal guidance "))%>%
+  mutate(`Reference number` = str_replace_all(`Reference number`, "^IPG", "NICE interventional procedures guidance "))%>%
+  mutate(`Reference number` = str_replace_all(`Reference number`, "^DG", "NICE diagnostics guidance "))%>%
+  mutate(`Reference number` = str_replace_all(`Reference number`, "^HST", "NICE highly specialised technologies guidance "))%>%
+  mutate(`Reference number` = str_replace_all(`Reference number`, "^MTG", "NICE medical technologies guidance "))%>%
+  mutate(`Reference number` = str_replace_all(`Reference number`, "^MPG", "NICE medicines practice guideline "))%>%
+  mutate(`Reference number` = str_replace_all(`Reference number`, "^HTE", "NICE health technology evaluation "))%>% 
+  mutate(`Reference number` = str_replace_all(`Reference number`, "^CSG", "NICE cancer service guideline "))%>%
+  mutate(`Reference number` = str_replace_all(`Reference number`, "^PH", "NICE guideline PH"))%>%
+  mutate(`Reference number` = str_replace_all(`Reference number`, "^SG", "NICE safe staffing guideline "))%>%
+  mutate(`Reference number` = str_replace_all(`Reference number`, "^SC", "NICE social care guideline "))%>%
+  mutate(`Reference number` = str_replace_all(`Reference number`, "^ES", "NICE evidence summary ES"))%>%
+  mutate(`Reference number` = str_replace_all(`Reference number`, "^MIB", "NICE medtech innovation briefing "))%>%
+  mutate(`Reference number` = str_replace_all(`Reference number`, "^ESNM", "NICE evidence summary ESNM"))%>%
+  mutate(`Reference number` = str_replace_all(`Reference number`, "^ESUOM", "NICE evidence summary ESUOM"))%>%
+  mutate(`Reference number` = str_replace_all(`Reference number`, "^ESMPB", "NICE evidence summary ESMPB"))%>%
+    
+# This code uses lubridate to reformat all the dates in the Published and Last Updated columns to display the year only 
+    
+  mutate(Published = format(dmy(Published),"%Y")) %>%
+  mutate(`Last updated` = format(dmy(`Last updated`),"%Y")) %>%
+  
+# Create a column called Updated. 
+    
+# If the year in the Published column is equal to the year in the Last updated column, this will be blank.
+    
+# If the year is different to that in the Published column, the code will insert the word "updated" before the year. 
+    
+  mutate(Updated = case_when(
+    Published == `Last updated` ~ "",
+    TRUE ~ " last updated "))  %>%
+  
+  mutate(`Last updated`= case_when(
+    `Last updated` != Published ~ paste("updated",`Last updated`, sep = " "),
+    TRUE ~ ""))  %>%
+  
+# If the Last Updated column contains data (e.g. 'last updated 2023'), this code will paste the data across to the Published column in the format: 2020 last updated 2023.
+    
+  mutate(Published = case_when(
+    `Last updated` != "" ~ paste(Published, `Last updated`, sep = " "),
+    TRUE ~ Published))  %>%
+  
+# This code adds opening and closing brackets around data in the Published column. E.g. (Published 2020 last updated 2023)
+    
+  mutate(Published = str_replace(Published, "^", "(")) %>%
+  mutate(Published = str_replace(Published, "$", ")"))  %>%
+  
+#Create a column called Merged. The code below will merge the Title, Published and Reference number into the new column. The merged data will be separated by a space in the new column. 
+    
+   mutate(Merged = "")  %>%
+   unite(Merged, Merged, Title, Published, `Reference number`, sep = " ", na.rm=TRUE) 
+}
+
+# Create a list of column (vector) names from the dataframe
+
+vecnames <- names(df)
+
+# Check if 4th column is called "Published" by checking if this is the 4th item in the new 'vecnames' list. If so, run dataframe through reformat_published function, if not, run it through reformat_in_development function. 
+
+if (vecnames[4] == "Published") {
+  df <- reformat_published(df)
+} else {
+  df <- reformat_in_development(df)
+}
+
+df <- df %>%
+  mutate(
+    # Extract both dates using regular expressions
+    date1 = as.Date(str_extract(Merged, "\\(20\\d{2}\\)"), format = "(%Y)"),
+    date2 = as.Date(str_extract(Merged, "(?<=updated )20\\d{2}"), format = "%Y"),
+    # Determine the later date
+    later_date = pmax(date1, date2, na.rm = TRUE)
+  ) %>%
+  select(Merged, later_date) %>%
+  arrange(desc(later_date))
+
+# Code to create a table with the Kable package. Final output needs knitting for export
+
+kable(df[1:1], col.names = NULL) 
+
+# Code to remove the exported text file from the working directory to prevent accidentally generating two identical bibliographies.
+
+file.remove(text_files[1])
+
+```

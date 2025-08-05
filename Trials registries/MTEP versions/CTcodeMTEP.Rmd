@@ -1,0 +1,68 @@
+---
+output: word_document
+params:
+  report.data: 
+  table: [some object]
+---
+
+```{r setup, echo=FALSE, message=FALSE, warning=FALSE}
+
+library(kableExtra)
+library(knitr)
+library(tidyverse)
+library(lubridate)
+library(here)
+
+knitr::opts_chunk$set(echo = FALSE,
+                      warning = FALSE,
+                      message = FALSE)
+
+```
+
+```{r loaddata}
+
+df <- read_csv(params$report.data)
+ 
+```
+
+```{r formatdf}
+
+df <- df %>%
+  
+  mutate(Results_URL = `NCT Number`) %>%
+  
+mutate(`Study URL` = str_replace(`Study URL`,  "^", "(")) %>%
+  mutate(`Study URL`= str_replace(`Study URL`, "$", ")")) %>%
+  mutate(`Study Title` = str_replace(`Study Title`, "^", "**Title:** [")) %>%
+  mutate(`Study Title` = str_replace(`Study Title`, "$", "]")) %>%
+  unite(`Study Title`, `Study Title`, `Study URL`, sep = "", na.rm=TRUE) %>%
+
+  mutate(`NCT Number` = str_replace(`NCT Number`, "^", "**Study number:** ")) %>%
+  
+  mutate(Status = str_replace(`Study Status`, "^", "**Status:** ")) %>%
+
+  mutate(Conditions = str_replace(Conditions, "^", "**Indication:** ")) %>%
+  mutate(Conditions = str_replace_all(Conditions, "\\|", "; ")) %>%
+ 
+  mutate(Interventions = str_replace(Interventions, "^", "**Devices:** ")) %>%
+  mutate(Interventions = str_replace_all(Interventions, "\\|", "; ")) %>% 
+ 
+  mutate(`Completion Date` = str_replace_na(`Completion Date`, "Not stated")) %>%
+  mutate(`Completion Date` = str_replace(`Completion Date`, "^", "**Study completion date:** ")) %>%
+
+  mutate(Locations = str_replace_na(Locations, "Not stated")) %>%
+  mutate(Locations = str_replace(Locations, "^", "**Locations:** ")) %>%
+  mutate(Locations = str_replace_all(Locations, "\\|", "; ")) 
+
+  df[ , 'Publication'] <- "**Publication:** *add publications or delete if not relevant*" 
+  
+  df$blank <-c("\\")  
+
+
+df <- select(df, `Study Title`, `NCT Number`, Status, Conditions, Interventions, `Completion Date`, Locations, Publication, blank) 
+
+
+kable(df[1:9], col.names = NULL) 
+```
+
+

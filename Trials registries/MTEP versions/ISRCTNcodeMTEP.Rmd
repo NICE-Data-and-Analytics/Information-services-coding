@@ -1,0 +1,71 @@
+---
+output: word_document
+params:
+  report.data: NA
+  table: [some object]
+---
+
+```{r setup, echo=FALSE, message=FALSE, warning=FALSE}
+
+library(kableExtra)
+library(knitr)
+library(tidyverse)
+library(lubridate)
+library(here)
+
+knitr::opts_chunk$set(echo = FALSE,
+                      warning = FALSE,
+                      message = FALSE)
+
+```
+
+```{r loaddata}
+
+df <- read_csv(params$report.data)
+ 
+```
+
+```{r formatdf}
+
+
+df <- df 
+
+df <- df %>%
+  
+  mutate(URL = ISRCTN) %>%
+  mutate(URL = str_replace(URL,"^", "https://www.isrctn.com/")) %>%
+  mutate(URL = str_replace(URL, "^", "("))%>%
+  mutate(URL = str_replace(URL, "$", ")"))%>%
+  mutate(Title = str_replace(Title, "^", "**Title:** [")) %>%
+  mutate(Title = str_replace(Title, "$", "]")) %>%
+  unite(Title, Title, URL, sep = "", na.rm=TRUE, remove = FALSE) %>%
+
+mutate(ISRCTN = str_replace(ISRCTN, "^", "**Study number:** ")) %>%
+  
+mutate(`Overall study status` = str_replace(`Overall study status`, "^", "**Status:** ")) %>%
+unite(`Overall study status`, `Overall study status`, `Recruitment status`, sep = "- ", na.rm=TRUE) %>%
+  
+mutate(Condition = str_replace(Condition, "^", "**Indication:** ")) %>%
+mutate(Condition = str_replace_all(Condition, "\\|", "; ")) %>%
+
+  mutate(`Intervention type` = str_replace_all(`Intervention type`, "\\|", "; ")) %>%
+  mutate(`Intervention type` = str_replace(`Intervention type`, "^", "**Devices:** ")) %>%
+  unite(`Intervention type`, `Intervention type`, `Drug/device/biological/vaccine name(s)`, sep = "; ", na.rm=TRUE, remove = FALSE) %>%
+
+  mutate(`Overall study end date` = format(ymd(`Overall study end date`),"%B %Y")) %>% 
+  mutate(`Overall study end date` = str_replace(`Overall study end date`, "^", "**Completion Date:** ")) %>%
+
+  mutate(`Country of recruitment` = str_replace(`Country of recruitment`, "^", "**Locations:** ")) %>%
+  mutate(`Country of recruitment` = str_replace_all(`Country of recruitment`, "\\;", "; ")) %>%
+  
+
+  mutate(Publication = "**Publication:** *add publications or delete if not relevant*" ) %>%
+
+  mutate(blank = "\\")  
+
+  
+df<-select(df,Title,ISRCTN,`Overall study status`, Condition,`Intervention type`,`Overall study end date`,`Country of recruitment`,`Publication`, blank)
+
+kable(df[1:9], col.names = NULL) 
+  
+```

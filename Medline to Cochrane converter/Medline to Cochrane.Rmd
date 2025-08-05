@@ -1,0 +1,252 @@
+---
+output:
+  word_document: default
+  html_document: default
+---
+```{r link chunk, echo=FALSE, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+
+library(dplyr)
+library(readxl)
+library(knitr)
+library(tidyverse)
+library(kableExtra)
+library(readr)
+library(purrr)
+
+# Import xlsx file
+mc1 <- read_excel("medline.xlsx", col_names = FALSE)
+
+# Remove the top rows if they are blank or start with the word Ovid (as in the database segment title)
+mc2 <- mc1 %>%
+  filter(!(is.na(...2) | ...2 == "" | grepl("^Ovid", ...2)))
+
+# Remove the first and third columns
+mc2 <- mc2[, -c(1, 3)] 
+
+# Ensure mc2 is a data frame
+mc2 <- as.data.frame(mc2)
+
+# Rename the remaining column to "Keywords"
+colnames(mc2) <- "Keywords"
+
+subheadings <- c("an" = "Analysis", "bl" = "Blood", "bs" = "Blood Supply", "cf" = "Cerebrospinal Fluid", "ci" = "Chemically Induced", "ch" = "Chemistry", "cl" = "Classification", "co" = "Complications", "cn" = "Congenital", "di" = "Diagnosis", "dg" = "Diagnostic Imaging", "dh" = "Diet Therapy", "de" = "Drug Effects", "dt" = "Drug Therapy", "ec" = "Economics", "em" = "Embryology", "en" = "Enzymology", "ep" = "Epidemiology", "eh" = "Ethnology", "et" = "Etiology", "ge" = "Genetics", "hi" = "History", "im" = "Immunology", "me" = "Metabolism", "mi" = "Microbiology", "mo" = "Mortality", "nu" = "Nursing", "ps" = "Parasitology", "pa" = "Pathology", "pp" = "Physiopathology", "pc" = "Prevention & Control", "px" = "Psychology", "rt" = "Radiotherapy", "rh" = "Rehabilitation", "sc" = "Secondary", "sn" = "Statistics & Numerical Data", "su" = "Surgery", "th" = "Therapy", "tm" = "Transmission", "tr" = "Transplantation", "ul" = "Ultrastructure", "ur" = "Urine", "ve" = "Veterinary", "vi" = "Virology")
+
+# Generate the pattern for all subheadings
+subheading_pattern <- paste(names(subheadings), collapse = "|")
+
+mc2 <- mc2 %>%
+
+  # If a line contains the word "exp" then replace / with "] for those lines  
+  mutate(Keywords = ifelse(grepl("exp", Keywords), gsub("/", "\"]", Keywords), Keywords)) %>%
+  
+  # Replace "exp" with [mh " 
+  mutate(Keywords = str_replace_all(Keywords, "exp ", "[mh \"")) %>%
+  
+  # If a line has / at the end of the line then add [mh ^" at the start of the line 
+  mutate(Keywords = ifelse(substr(Keywords, nchar(Keywords), nchar(Keywords)) == "/", paste("[mh ^\"", Keywords, sep=""), Keywords)) %>%
+  
+  # Replace / with "]  
+  mutate(Keywords = gsub("/", "\"]", Keywords)) %>%
+  
+  # For some lines there is already " around the phrase so you end up with "". Need to insert code to replace "" with "
+  mutate(Keywords = gsub("\"\"", "\"", Keywords)) %>%
+  
+# Handle lines that start with mh and end with any of the potential subheadings
+mutate(Keywords = ifelse(grepl(paste0("^\\[mh.*\\ \\[.*\\]$"), Keywords), 
+                         gsub(paste0("\\](", subheading_pattern, ") \\[.*\\]$"), "/\\1]", Keywords), Keywords)) %>%
+  
+    mutate(Keywords = str_replace_all(Keywords, '"([^"]*\\*)"', function(x) {
+    # Remove the quotation marks
+    phrase <- str_replace_all(x, '"', "")
+    # Split the phrase into words
+    words <- str_split(phrase, "\\s+")[[1]]
+    # Join the words with "NEXT"
+    new_phrase <- paste(words, collapse = " NEXT ")
+    return(new_phrase)
+  })) %>%
+  
+  # Handle lines that do not start with [mh and end with a subheading
+   mutate(Keywords = ifelse(!grepl("^\\[mh", Keywords) & grepl("\\]an \\[Analysis\\]$", Keywords), paste("[mh ^\"", gsub("\\]an \\[Analysis\\]$", "/an]", Keywords), sep=""), Keywords)) %>%
+
+mutate(Keywords = ifelse(!grepl("^\\[mh", Keywords) & grepl("\\]bl \\[Blood\\]$", Keywords), paste("[mh ^\"", gsub("\\]bl \\[Blood\\]$", "/bl]", Keywords), sep=""), Keywords)) %>%
+
+mutate(Keywords = ifelse(!grepl("^\\[mh", Keywords) & grepl("\\]bs \\[Blood Supply\\]$", Keywords), paste("[mh ^\"", gsub("\\]bs \\[Blood Supply\\]$", "/bs]", Keywords), sep=""), Keywords)) %>%
+
+mutate(Keywords = ifelse(!grepl("^\\[mh", Keywords) & grepl("\\]cf \\[Cerebrospinal Fluid\\]$", Keywords), paste("[mh ^\"", gsub("\\]cf \\[Cerebrospinal Fluid\\]$", "/cf]", Keywords), sep=""), Keywords)) %>%
+
+mutate(Keywords = ifelse(!grepl("^\\[mh", Keywords) & grepl("\\]ci \\[Chemically Induced\\]$", Keywords), paste("[mh ^\"", gsub("\\]ci \\[Chemically Induced\\]$", "/ci]", Keywords), sep=""), Keywords)) %>%
+
+mutate(Keywords = ifelse(!grepl("^\\[mh", Keywords) & grepl("\\]ch \\[Chemistry\\]$", Keywords), paste("[mh ^\"", gsub("\\]ch \\[Chemistry\\]$", "/ch]", Keywords), sep=""), Keywords)) %>%
+
+mutate(Keywords = ifelse(!grepl("^\\[mh", Keywords) & grepl("\\]cl \\[Classification\\]$", Keywords), paste("[mh ^\"", gsub("\\]cl \\[Classification\\]$", "/cl]", Keywords), sep=""), Keywords)) %>%
+
+mutate(Keywords = ifelse(!grepl("^\\[mh", Keywords) & grepl("\\]co \\[Complications\\]$", Keywords), paste("[mh ^\"", gsub("\\]co \\[Complications\\]$", "/co]", Keywords), sep=""), Keywords)) %>%
+
+mutate(Keywords = ifelse(!grepl("^\\[mh", Keywords) & grepl("\\]cn \\[Congenital\\]$", Keywords), paste("[mh ^\"", gsub("\\]cn \\[Congenital\\]$", "/cn]", Keywords), sep=""), Keywords)) %>%
+
+mutate(Keywords = ifelse(!grepl("^\\[mh", Keywords) & grepl("\\]di \\[Diagnosis\\]$", Keywords), 
+paste("[mh ^\"", gsub("\\]di \\[Diagnosis\\]$", "/di]", Keywords), sep=""), Keywords)) %>%
+
+mutate(Keywords = ifelse(!grepl("^\\[mh", Keywords) & grepl("\\]dg \\[Diagnostic Imaging\\]$", Keywords), paste("[mh ^\"", gsub("\\]dg \\[Diagnostic Imaging\\]$", "/dg]", Keywords), sep=""), Keywords)) %>%
+
+mutate(Keywords = ifelse(!grepl("^\\[mh", Keywords) & grepl("\\]dh \\[Diet Therapy\\]$", Keywords), paste("[mh ^\"", gsub("\\]dh \\[Diet Therapy\\]$", "/dh]", Keywords), sep=""), Keywords)) %>%
+
+mutate(Keywords = ifelse(!grepl("^\\[mh", Keywords) & grepl("\\]de \\[Drug Effects\\]$", Keywords), paste("[mh ^\"", gsub("\\]de \\[Drug Effects\\]$", "/de]", Keywords), sep=""), Keywords)) %>%
+
+mutate(Keywords = ifelse(!grepl("^\\[mh", Keywords) & grepl("\\]dt \\[Drug Therapy\\]$", Keywords), paste("[mh ^\"", gsub("\\]dt \\[Drug Therapy\\]$", "/dt]", Keywords), sep=""), Keywords)) %>%
+
+mutate(Keywords = ifelse(!grepl("^\\[mh", Keywords) & grepl("\\]ec \\[Economics\\]$", Keywords), 
+paste("[mh ^\"", gsub("\\]ec \\[Economics\\]$", "/ec]", Keywords), sep=""), Keywords)) %>%
+
+mutate(Keywords = ifelse(!grepl("^\\[mh", Keywords) & grepl("\\]em \\[Embryology\\]$", Keywords), paste("[mh ^\"", gsub("\\]em \\[Embryology\\]$", "/em]", Keywords), sep=""), Keywords)) %>%
+
+mutate(Keywords = ifelse(!grepl("^\\[mh", Keywords) & grepl("\\]en \\[Enzymology\\]$", Keywords), paste("[mh ^\"", gsub("\\]en \\[Enzymology\\]$", "/en]", Keywords), sep=""), Keywords)) %>%
+
+mutate(Keywords = ifelse(!grepl("^\\[mh", Keywords) & grepl("\\]ep \\[Epidemiology\\]$", Keywords), paste("[mh ^\"", gsub("\\]ep \\[Epidemiology\\]$", "/ep]", Keywords), sep=""), Keywords)) %>%
+
+mutate(Keywords = ifelse(!grepl("^\\[mh", Keywords) & grepl("\\]eh \\[Ethnology\\]$", Keywords), 
+paste("[mh ^\"", gsub("\\]eh \\[Ethnology\\]$", "/eh]", Keywords), sep=""), Keywords)) %>%
+
+mutate(Keywords = ifelse(!grepl("^\\[mh", Keywords) & grepl("\\]et \\[Etiology\\]$", Keywords), 
+paste("[mh ^\"", gsub("\\]et \\[Etiology\\]$", "/et]", Keywords), sep=""), Keywords)) %>%
+
+mutate(Keywords = ifelse(!grepl("^\\[mh", Keywords) & grepl("\\]ge \\[Genetics\\]$", Keywords), 
+paste("[mh ^\"", gsub("\\]ge \\[Genetics\\]$", "/ge]", Keywords), sep=""), Keywords)) %>%
+
+mutate(Keywords = ifelse(!grepl("^\\[mh", Keywords) & grepl("\\]hi \\[History\\]$", Keywords), 
+paste("[mh ^\"", gsub("\\]hi \\[History\\]$", Keywords), sep=""), Keywords)) %>%
+
+mutate(Keywords = ifelse(!grepl("^\\[mh", Keywords) & grepl("\\]im \\[Immunology\\]$", Keywords), paste("[mh ^\"", gsub("\\]im \\[Immunology\\]$", "/im]", Keywords), sep=""), Keywords)) %>%
+
+mutate(Keywords = ifelse(!grepl("^\\[mh", Keywords) & grepl("\\]me \\[Metabolism\\]$", Keywords), paste("[mh ^\"", gsub("\\]me \\[Metabolism\\]$", "/me]", Keywords), sep=""), Keywords)) %>%
+
+mutate(Keywords = ifelse(!grepl("^\\[mh", Keywords) & grepl("\\]mi \\[Microbiology\\]$", Keywords), paste("[mh ^\"", gsub("\\]mi \\[Microbiology\\]$", "/mi]", Keywords), sep=""), Keywords)) %>%
+
+mutate(Keywords = ifelse(!grepl("^\\[mh", Keywords) & grepl("\\]mo \\[Mortality\\]$", Keywords), 
+paste("[mh ^\"", gsub("\\]mo \\[Mortality\\]$", "/mo]", Keywords), sep=""), Keywords)) %>%
+
+mutate(Keywords = ifelse(!grepl("^\\[mh", Keywords) & grepl("\\]nu \\[Nursing\\]$", Keywords), 
+paste("[mh ^\"", gsub("\\]nu \\[Nursing\\]$", "/nu]", Keywords), sep=""), Keywords)) %>%
+
+mutate(Keywords = ifelse(!grepl("^\\[mh", Keywords) & grepl("\\]ps \\[Parasitology\\]$", Keywords), paste("[mh ^\"", gsub("\\]ps \\[Parasitology\\]$", "/ps]", Keywords), sep=""), Keywords)) %>%
+
+mutate(Keywords = ifelse(!grepl("^\\[mh", Keywords) & grepl("\\]pa \\[Pathology\\]$", Keywords), 
+paste("[mh ^\"", gsub("\\]pa \\[Pathology\\]$", "/pa]", Keywords), sep=""), Keywords)) %>%
+
+mutate(Keywords = ifelse(!grepl("^\\[mh", Keywords) & grepl("\\]pp \\[Physiopathology\\]$", Keywords), paste("[mh ^\"", gsub("\\]pp \\[Physiopathology\\]$", "/pp]", Keywords), sep=""), Keywords)) %>%
+
+mutate(Keywords = ifelse(!grepl("^\\[mh", Keywords) & grepl("\\]pc \\[Prevention & Control\\]$", Keywords), paste("[mh ^\"", gsub("\\]pc \\[Prevention & Control\\]$", "/pc]", Keywords), sep=""), Keywords)) %>%
+  
+mutate(Keywords = ifelse(!grepl("^\\[mh", Keywords) & grepl("\\]px \\[Psychology\\]$", Keywords), paste("[mh ^\"", gsub("\\]px \\[Psychology\\]$", "/px]", Keywords), sep=""), Keywords)) %>%
+
+mutate(Keywords = ifelse(!grepl("^\\[mh", Keywords) & grepl("\\]rt \\[Radiotherapy\\]$", Keywords), paste("[mh ^\"", gsub("\\]rt \\[Radiotherapy\\]$", "/rt]", Keywords), sep=""), Keywords)) %>%
+
+mutate(Keywords = ifelse(!grepl("^\\[mh", Keywords) & grepl("\\]rh \\[Rehabilitation\\]$", Keywords), paste("[mh ^\"", gsub("\\]rh \\[Rehabilitation\\]$", "/rh]", Keywords), sep=""), Keywords)) %>%
+
+mutate(Keywords = ifelse(!grepl("^\\[mh", Keywords) & grepl("\\]sc \\[Secondary\\]$", Keywords), 
+paste("[mh ^\"", gsub("\\]sc \\[Secondary\\]$", "/sc]", Keywords), sep=""), Keywords)) %>%
+
+mutate(Keywords = ifelse(!grepl("^\\[mh", Keywords) & grepl("\\]sn \\[Statistics & Numerical Data\\]$", Keywords), paste("[mh ^\"", gsub("\\]sn \\[Statistics & Numerical Data\\]$", "/sn]", Keywords), sep=""), Keywords)) %>%
+
+mutate(Keywords = ifelse(!grepl("^\\[mh", Keywords) & grepl("\\]su \\[Surgery\\]$", Keywords), 
+paste("[mh ^\"", gsub("\\]su \\[Surgery\\]$", "/su]", Keywords), sep=""), Keywords)) %>%
+
+mutate(Keywords = ifelse(!grepl("^\\[mh", Keywords) & grepl("\\]th \\[Therapy\\]$", Keywords), 
+paste("[mh ^\"", gsub("\\]th \\[Therapy\\]$", "/th]", Keywords), sep=""), Keywords)) %>%
+
+mutate(Keywords = ifelse(!grepl("^\\[mh", Keywords) & grepl("\\]tm \\[Transmission\\]$", Keywords), paste("[mh ^\"", gsub("\\]tm \\[Transmission\\]$", "/tm]", Keywords), sep=""), Keywords)) %>%
+
+mutate(Keywords = ifelse(!grepl("^\\[mh", Keywords) & grepl("\\]tr \\[Transplantation\\]$", Keywords), paste("[mh ^\"", gsub("\\]tr \\[Transplantation\\]$", "/tr]", Keywords), sep=""), Keywords)) %>%
+
+mutate(Keywords = ifelse(!grepl("^\\[mh", Keywords) & grepl("\\]ul \\[Ultrastructure\\]$", Keywords), paste("[mh ^\"", gsub("\\]ul \\[Ultrastructure\\]$", "/ul]", Keywords), sep=""), Keywords)) %>%
+
+mutate(Keywords = ifelse(!grepl("^\\[mh", Keywords) & grepl("\\]ur \\[Urine\\]$", Keywords), 
+paste("[mh ^\"", gsub("\\]ur \\[Urine\\]$", "/ur]", Keywords), sep=""), Keywords)) %>%
+
+mutate(Keywords = ifelse(!grepl("^\\[mh", Keywords) & grepl("\\]ve \\[Veterinary\\]$", Keywords), paste("[mh ^\"", gsub("\\]ve \\[Veterinary\\]$", "/ve]", Keywords), sep=""), Keywords)) %>%
+
+mutate(Keywords = ifelse(!grepl("^\\[mh", Keywords) & grepl("\\]vi \\[Virology\\]$", Keywords), 
+paste("[mh ^\"", gsub("\\]vi \\[Virology\\]$", "/vi]", Keywords), sep=""), Keywords)) %>%
+  
+  # Some MeSH terms may be focused - if this is the case we need to remove the * from these lines.
+  mutate(Keywords = ifelse(grepl("^\\[mh", Keywords) & grepl("\\*", Keywords), gsub("\\*", "", Keywords), Keywords)) %>%
+  
+  # When you replace / with "] it adds a "] to the adj lines e.g. adj"]1-5. This line of code says if "] is followed by a digit write r code that will replace the "] with a /
+  mutate(Keywords = gsub("\"](?=[0-9])", "/", Keywords, perl = TRUE)) %>%
+  
+  # For lines where adj is used with a number (e.g. adj5) we want to replace adj with "NEAR/"   
+  mutate(Keywords = gsub("adj(?=[0-9])", "NEAR/", Keywords, perl = TRUE)) %>%
+  
+  # For lines where adj is used without a number change adj to NEXT
+  mutate(Keywords = str_replace_all(Keywords, "adj", "NEXT")) %>%
+
+  
+  # Replacing Medline field codes with their Cochrane equivalent
+  mutate(Keywords = str_replace_all(Keywords, "\\.ti\\.|\\.fc_titl\\.|\\.cl\\.|\\.bt\\.|\\.io\\.|\\.ot\\.|\\.vb\\.", ":ti")) %>%
+  mutate(Keywords = str_replace_all(Keywords, "\\.ab\\.", ":ab")) %>%
+  mutate(Keywords = str_replace_all(Keywords, "\\.kf\\.|\\.kw\\.|\\.in\\.|\\.in,kw\\.|\\.in,kf\\.", ":kw")) %>%
+  mutate(Keywords = str_replace_all(Keywords, "\\.au\\.\\.fa\\.|\\.ba\\.|\\.bf\\.|\\.be\\.|\\.ax\\.|\\.ai\\.|\\.ee\\.|\\.ex\\.|\\.pa\\.|\\.fe\\.", ":au")) %>%
+  mutate(Keywords = str_replace_all(Keywords, "\\.so\\.|\\.jn\\.", ":so")) %>%
+  mutate(Keywords = str_replace_all(Keywords, "\\.pt\\.", ":pt")) %>%
+  mutate(Keywords = str_replace_all(Keywords, "\\.do\\.", ":doi")) %>%
+  mutate(Keywords = str_replace_all(Keywords, "\\.lg\\.", ":la")) %>%
+  mutate(Keywords = str_replace_all(Keywords, "\\.ui\\.|\\.id\\.|\\.ib\\.|\\.es\\.|\\.il\\.|\\.is\\.", ":an")) %>%
+  mutate(Keywords = str_replace_all(Keywords, "\\.tw\\.|\\.mp\\.|\\.ti,ab,in\\.|\\.ti,ab,kw\\.|\\.ti,ab,kf\\.", ":ti,ab,kw")) %>%
+  mutate(Keywords = str_replace_all(Keywords, "\\.af\\.", "")) %>%
+  mutate(Keywords = str_replace_all(Keywords, "\\.ab,kw\\.|\\.ab,kf\\.", ":ab,kw")) %>%
+  mutate(Keywords = str_replace_all(Keywords, "\\.ti,ab\\.", ":ti,ab")) %>%
+  mutate(Keywords = str_replace_all(Keywords, "\\.ti,kf\\.|\\.ti,kw\\|\\.ti,in\\.", ":ti,kw")) %>%
+  mutate(Keywords = str_replace_all(Keywords, "\\.ti,ab,in,jn\\.", ":ti,ab,kw,so")) %>%
+  mutate(Keywords = str_replace_all(Keywords, "\\.ti,ab,jn\\.", ":ti,ab,so")) %>%
+  mutate(Keywords = str_replace_all(Keywords, "\\.ti,in,jn\\.", ":ti,kw,so")) %>%
+  mutate(Keywords = str_replace_all(Keywords, "\\.ti,jn\\.", ":ti,so")) %>%
+  mutate(Keywords = str_replace_all(Keywords, "\\.ab,in\\.", ":ab,kw")) %>%
+  mutate(Keywords = str_replace_all(Keywords, "\\.ab,jn\\.", ":ab,so")) %>%
+  mutate(Keywords = str_replace_all(Keywords, "\\.jn,kw\\.|\\.jn,kf\\.", ":so,kw")) %>%
+  mutate(Keywords = str_replace_all(Keywords, "\\.hw\\.", ":pt,kw")) %>%
+  
+  # no equivalent field code so need to replace with message to delete and change numbering accordingly
+  mutate(Keywords = str_replace_all(Keywords, "\\.up\\.|\\.ps\\.|\\.fs\\.|\\.as\\.|\\.oa\\.|\\.ec\\.|\\.oi\\.|\\.xm\\.|\\.pg\\.|\\.my\\.|\\.xs\\.|\\.pn\\|\\.mx\\.|\\.pl\\.|\\.fx\\.|\\.pm\\.|\\.bd\\.|\\.bk\\.|\\.bn\\.|\\.pr\\.|\\.bv\\.|\\.rn\\.|\\.cq\\.|\\.cd\\.|\\.rp\\.|\\.cg\\.|\\.cz\\.|\\.ry\\.|\\.cs\\.|\\.rz\\.|\\.ce\\.|\\.rf\\.|\\.cm\\.|\\.ci\\.|\\.cb\\.|\\.cr\\.|\\.cn\\.|\\.cp\\.|\\.dt\\.|\\.dp\\.|\\.ed\\.|\\.ep\\.|\\.gs\\.|\\.gw\\.|\\.nt\\.|\\.gr\\.|\\.gc\\.|\\.gi\\.|\\.no\\.|\\.go\\.|\\.ig\\.|\\.ir\\.|\\.ia\\.|\\.ix\\.|\\.ip\\.|\\.sb\\.|\\.jw\\.|\\.ko\\.|\\.mt\\.|\\.da\\.|\\.sh\\.|\\.nm\\.|\\.jc\\.|\\.nj\\.|\\.nw\\.|\\.nr\\.|\\.oj\\.|\\.os\\.|\\.ox\\.|\\.ul\\.|\\.ux\\.|\\.ps\\.|\\.px\\.|\\.ph\\.|\\.pp\\.|\\.pi\\.|\\.pb\\.|\\.di\\.|\\.pq\\.|\\.rs\\.|\\.rx\\.|\\.ro\\.|\\.rl\\.|\\.rr\\.|\\.rd\\.|\\.se\\.|\\.sa\\.|\\.si\\.|\\.sl\\.|\\.sn\\.|\\.sm\\.|\\.st\\.|\\.sy\\.|\\.tc\\.|\\.vd\\.|\\.vi\\.|\\.vo\\.|\\.yr\\.", " **THIS LINE HAS A FIELD CODE WITH NO COCHRANE EQUIVALENT, CONSIDER DELETING THIS LINE AND ALTERING NUMBERING**")) %>%
+
+  # Change dollar sign truncation to asterisk 
+  mutate(Keywords = gsub("\\$", "*", Keywords)) %>%
+    
+# Replace or/ with {OR #
+  mutate(Keywords = str_replace_all(Keywords, "or/", "{OR #")) %>%
+  
+  # Replace "-" next to a number with "-" number
+  mutate(Keywords = str_replace_all(Keywords, "-(\\d+)", "-#\\1")) %>%
+  
+ # Add hashes to numbers only in the specified patterns
+  mutate(Keywords = str_replace_all(Keywords, "(?i)\\bor/(\\d{1,4})-(\\d{1,4})\\b", "or/#\\1-#\\2")) %>%
+  mutate(Keywords = str_replace_all(Keywords, "(?i)\\b(\\d{1,4})\\s*or\\s*(\\d{1,4})(\\s*or\\s*\\d{1,4}){0,999}\\b", function(x) str_replace_all(x, "(\\d+)", "#\\1"))) %>%
+  mutate(Keywords = str_replace_all(Keywords, "(?i)\\b(\\d{1,4})\\s*OR\\s*(\\d{1,4})(\\s*OR\\s*\\d{1,4}){0,999}\\b", function(x) str_replace_all(x, "(\\d+)", "#\\1"))) %>%
+  mutate(Keywords = str_replace_all(Keywords, "(?i)\\b(\\d{1,4})\\s*and\\s*(\\d{1,4})(\\s*and\\s*\\d{1,4}){0,999}\\b", function(x) str_replace_all(x, "(\\d+)", "#\\1"))) %>%
+  mutate(Keywords = str_replace_all(Keywords, "(?i)\\b(\\d{1,4})\\s*AND\\s*(\\d{1,4})(\\s*AND\\s*\\d{1,4}){0,999}\\b", function(x) str_replace_all(x, "(\\d+)", "#\\1"))) %>%
+  mutate(Keywords = str_replace_all(Keywords, "(?i)\\b(\\d{1,4})\\s*NOT\\s*(\\d{1,4})\\b", function(x) str_replace_all(x, "(\\d+)", "#\\1"))) %>%
+  mutate(Keywords = str_replace_all(Keywords, "(?i)\\b(\\d{1,4})\\s*not\\s*(\\d{1,4})\\b", function(x) str_replace_all(x, "(\\d+)", "#\\1"))) %>%
+
+  # Add closing brace at the end only if it starts with {OR and does not already have a closing brace
+  mutate(Keywords = ifelse(grepl("^\\{OR", Keywords) & !grepl("\\}$", Keywords), paste0(Keywords, "}"), Keywords)) %>%
+  
+  # If a line has multiple MeSH terms AND'd together on one line, remove the "] inserted by the line above
+  mutate(Keywords = gsub("\"] and ", "\"] and [mh ^\"", Keywords)) %>%
+  
+  # If a line has multiple MeSH terms NOT'd together on one line, remove the "] inserted by the line above
+  mutate(Keywords = gsub("\"] not ", "\"] not [mh ^\"", Keywords)) %>%
+
+#Remove hashes where they are preceded by a letter or a word and a dash, but not a number
+  mutate(Keywords = str_replace_all(Keywords, "(?<=\\w)-#(\\d+)", "-\\1")) %>%
+  mutate(Keywords = str_replace_all(Keywords, "(?<=\\w)#(\\d+)", "\\1")) %>%
+  # Ensure hashes are preserved in patterns like {OR #11-#14}
+  mutate(Keywords = str_replace_all(Keywords, "(?<=\\{OR\\s)#(\\d+)-(\\d+)", "#\\1-#\\2")) %>%
+
+# Ensure asterisks are not interpreted as Markdown syntax
+mutate(Keywords = gsub("\\*", "\\\\*", Keywords))  
+
+# Code to create a table with the Kable package. Final output needs knitting for export
+
+kable(mc2[1:1], col.names = NULL) 
+
+```

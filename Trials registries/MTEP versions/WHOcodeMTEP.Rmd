@@ -1,0 +1,65 @@
+---
+output: word_document
+params:
+  report.data: NA
+  table: [some object]
+---
+
+```{r setup, echo=FALSE, message=FALSE, warning=FALSE}
+
+library(kableExtra)
+library(knitr)
+library(tidyverse)
+library(lubridate)
+library(here)
+
+knitr::opts_chunk$set(echo = FALSE,
+                      warning = FALSE,
+                      message = FALSE)
+
+```
+
+```{r loaddata}
+
+df <- read_csv(params$report.data)
+ 
+```
+
+```{r formatdf}
+
+df <- df %>%
+
+  filter(`Source Register`!= "ClinicalTrials.gov")%>%
+  filter(`Source Register`!= "ISRCTN")%>%
+  mutate(`web address` = str_remove_all(`web address`, "\\r\\n"))%>%
+  mutate(`web address`= str_replace(`web address`, "^", "(")) %>%
+  mutate(`web address`= str_replace(`web address`, "$", ")")) %>%
+  mutate(`Scientific title` = str_remove_all(`Scientific title`, "\\r\\n"))%>%
+  mutate(`Scientific title` = str_trim(`Scientific title`, side = c("right")))%>%
+  mutate(`Scientific title` = str_replace(`Scientific title`, "^", "**Title:** [")) %>%
+  mutate(`Scientific title` = str_replace(`Scientific title`, "$", "]")) %>%
+  unite(`Scientific title`, `Scientific title`, `web address`, sep = "", na.rm=TRUE)%>%
+  mutate(TrialID = str_replace(TrialID, "^", "**Study number:** "))%>% 
+  
+  mutate(`Recruitment Status` = str_replace(`Recruitment Status`, "^", "**Status:** "))%>%
+  
+  mutate(Condition = str_replace(Condition, "^", "**Indication:** ")) %>%
+  mutate(Condition = str_replace_all(Condition, "\\<br>", "; ")) %>%
+  
+  mutate(Intervention = str_replace(Intervention, "^", "**Devices:** ")) %>%
+  mutate(Intervention = str_replace_all(Intervention, "\\<br>", "; ")) %>% 
+
+  mutate(Completiondate = "**Completion Date:** Not stated") %>%
+ 
+  mutate(Countries = str_replace(Countries, "^", "**Locations:** ")) %>%
+  mutate(Countries = str_replace_all(Countries, "\\;", "; ")) 
+
+  df[ , 'Publication'] <- "**Publication:** *add publications or delete if not relevant*" 
+  
+  df$blank <-c("\\")  
+
+  
+df<-select(df,`Scientific title`,TrialID, `Recruitment Status`,Condition,Intervention,Completiondate,Countries,Publication, blank)  
+           
+
+kable(df[1:9], col.names = NULL) 

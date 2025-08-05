@@ -1,0 +1,28 @@
+Link	Title	Type	Expected publication date
+https://www.nice.org.uk/guidance/indevelopment/gid-ta11204	Atezolizumab with cabozantinib for treating metastatic non-small-cell lung cancer after platinum-based chemotherapy and 1 PD-L1 checkpoint inhibitor [ID6213]	Technology appraisal guidance	TBC
+https://www.nice.org.uk/guidance/indevelopment/gid-ta10899	Aumolertinib for untreated EGFR mutation-positive non-small-cell lung cancer [ID4000]	Technology appraisal guidance	TBC
+https://www.nice.org.uk/guidance/indevelopment/gid-ta10250	Avelumab for untreated PD-L1 positive recurrent or metastatic non-small-cell lung cancer [ID1261]	Technology appraisal guidance	TBC
+https://www.nice.org.uk/guidance/indevelopment/gid-ta11026	Canakinumab for adjuvant treatment of resectable or resected stage 2A to 3B non-small-cell lung cancer [ID5114]	Technology appraisal guidance	TBC
+https://www.nice.org.uk/guidance/indevelopment/gid-ta10907	Cemiplimab with chemotherapy for untreated advanced or metastatic non-small-cell lung cancer [ID3949]	Technology appraisal guidance	TBC
+https://www.nice.org.uk/guidance/indevelopment/gid-ta10225	Cimavax for treating wild-type EGFR-positive non-small-cell lung cancer [1259]	Technology appraisal guidance	TBC
+https://www.nice.org.uk/guidance/indevelopment/gid-ta11450	Crizotinib for treating ROS1-positive advanced non-small-cell lung cancer (MA review of TA529) [ID6289]	Technology appraisal guidance	TBC
+https://www.nice.org.uk/guidance/indevelopment/gid-ta11197	Durvalumab as neoadjuvant (with chemotherapy) and adjuvant (as monotherapy) treatment for resectable non-small-cell lung cancer [ID6220]	Technology appraisal guidance	TBC
+https://www.nice.org.uk/guidance/indevelopment/gid-ng10404	Durvalumab for adjuvant treatment of resectable non-small-cell lung cancer [ID1263]	NICE guideline	TBC
+https://www.nice.org.uk/guidance/indevelopment/gid-tag496	Lung cancer (non-small cell, advanced, inoperable) - liposomal cisplatin (with chemotherapy) [ID657]	Technology appraisal guidance	TBC
+https://www.nice.org.uk/guidance/indevelopment/gid-tag388	Lung cancer (non-small-cell, advanced or metastatic maintenance treatment) - erlotinib (in combination with bevacizumab) [ID44]	Technology appraisal guidance	TBC
+https://www.nice.org.uk/guidance/indevelopment/gid-tag406	Lung cancer (non-small-cell, advanced or metastatic second line) - erlotinib (in combination with bevacizumab) [ID43]	Technology appraisal guidance	TBC
+https://www.nice.org.uk/guidance/indevelopment/gid-ta11369	Osimertinib for adjuvant treatment of EGFR mutation-positive non-small-cell lung cancer after complete tumour resection (Review of TA761) [ID5120]	Technology appraisal guidance	14 August 2024
+https://www.nice.org.uk/guidance/indevelopment/gid-ta11408	Osimertinib with pemetrexed and platinum-based chemotherapy for untreated EGFR mutation-positive advanced non-small-cell lung cancer ID6328	Technology appraisal guidance	TBC
+https://www.nice.org.uk/guidance/indevelopment/gid-ta11174	Pembrolizumab as neoadjuvant (with chemotherapy) and adjuvant (as monotherapy) treatment for resectable non-small-cell lung cancer ID5094	Technology appraisal guidance	TBC
+https://www.nice.org.uk/guidance/indevelopment/gid-ta10784	Pembrolizumab for adjuvant treatment of resected non-small-cell lung cancer [ID3907]	Technology appraisal guidance	TBC
+https://www.nice.org.uk/guidance/indevelopment/gid-ta10780	Pembrolizumab with ipilimumab for treating PD-L1-positive advanced non-small-cell lung cancer [ID3861]	Technology appraisal guidance	TBC
+https://www.nice.org.uk/guidance/indevelopment/gid-ta11024	Pembrolizumab with lenvatinib for treating EGFR, ALK or ROS1-negative metastatic non-small-cell lung cancer after a PD-1 or PD-L1 inhibitor and platinum-based chemotherapy [ID5109]	Technology appraisal guidance	TBC
+https://www.nice.org.uk/guidance/indevelopment/gid-ta10906	Pembrolizumab with olaparib for maintenance treatment of advanced squamous non-small-cell lung cancer ID4006	Technology appraisal guidance	TBC
+https://www.nice.org.uk/guidance/indevelopment/gid-ta10766	Pembrolizumab with pemetrexed and platinum-based chemotherapy for previously TKI-treated EGFR-positive metastatic non-squamous non-small-cell lung cancer [ID3873]	Technology appraisal guidance	TBC
+https://www.nice.org.uk/guidance/indevelopment/gid-ta10880	Pembrolizumab with platinum chemotherapy, pemetrexed and lenvatinib for untreated advanced non-squamous non-small-cell lung cancer [ID3985]	Technology appraisal guidance	TBC
+https://www.nice.org.uk/guidance/indevelopment/gid-ta11480	Selpercatinib for previously treated RET fusion-positive advanced non-small-cell lung cancer (MA review of TA760) [ID6293]	Technology appraisal guidance	13 November 2024
+https://www.nice.org.uk/guidance/indevelopment/gid-ta10900	Sugemalimab with chemotherapy for untreated metastatic non-small-cell lung cancer [ID4001]	Technology appraisal guidance	TBC
+https://www.nice.org.uk/guidance/indevelopment/gid-ta11099	Tislelizumab for treating advanced non-small-cell lung cancer after platinum-based chemotherapy [ID6161]	Technology appraisal guidance	TBC
+https://www.nice.org.uk/guidance/indevelopment/gid-ta11101	Tislelizumab in combination for untreated advanced non-small-cell lung cancer [ID6162]	Technology appraisal guidance	TBC
+https://www.nice.org.uk/guidance/indevelopment/gid-ta11289	Treatments for non-small-cell lung cancer [ID6234]	Technology appraisal guidance	27 September 2024
+https://www.nice.org.uk/guidance/indevelopment/gid-ta10248	Veliparib with carboplatin and paclitaxel for untreated non-squamous non-small-cell lung cancer [ID1277]	Technology appraisal guidance	TBC

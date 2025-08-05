@@ -1,0 +1,38 @@
+library(tidyverse)
+library(readr)
+library(stringr)
+library(tibble)
+library(dplyr)
+
+text_files <- list.files(path = ".", pattern = "\\.txt$")
+
+df <- read_delim(text_files[1], delim = "\t", 
+                 quote = "\\\"", escape_double = FALSE, 
+                 trim_ws = TRUE, skip = 4)
+
+df <- df |>
+  select(Search) |>
+  mutate(Search = str_to_lower(Search)) |>
+  #remove MESH descriptor and replace with one double phrase mark
+  mutate(Search = str_replace_all(Search, "mesh descriptor: |mh|mhe", "\""))|>
+  mutate(Search = str_remove_all(Search, "\\[|\\]|\\}"))|>
+  mutate(Search = str_replace_all(Search, " explode all trees", "\"\\[mhe\\]"))|>
+  mutate(Search = str_replace_all(Search, " this term only", "\"\\[mh\\]"))|>
+  #replace near with AND
+  mutate(Search = str_replace_all(Search, "near\\/[:digit:]|next", "AND"))|>
+  
+  #remove fields
+  mutate(Search = str_remove_all(Search, ":ti,ab,kw|:ti,ab|:ti|:ab|:kw"))|>
+  #Add note
+  mutate(Search = str_replace_all(Search, "\\{or", "OR combination manually tick"))|>
+  mutate(Search = str_replace_all(Search, "\"conference\":pt|\\(clinicaltrials", "DELETE THIS LIMIT"))
+
+# Pattern to match hyphenated words
+pattern <- "\\b(\\w+-\\w+)\\b"
+# Use str_replace_all to enclose hyphenated words with double quotes
+df <- df |>
+  mutate(Search = str_replace_all(Search, pattern, '"\\1"'))|>
+  mutate(Search = str_replace_all(Search, "\"\"", "\"" ))
+
+write.table(df$Search, file = "INAHTA_translation.txt", 
+            row.names = FALSE, col.names = FALSE, quote = FALSE)
