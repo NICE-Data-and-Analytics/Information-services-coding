@@ -4,37 +4,36 @@ params:
   report.data: NA
   table: [some object]
 ---
- 
+
 ```{r setup, echo=FALSE, message=FALSE, warning=FALSE}
- 
+
 library(kableExtra)
 library(knitr)
 library(tidyverse)
 library(lubridate)
-library(here)
- 
+
 knitr::opts_chunk$set(echo = FALSE,
                       warning = FALSE,
                       message = FALSE)
- 
+
 ```
- 
+
 ```{r loaddata}
- 
+
 #Import CSV file, using filepath from params object created in shiny app
 df <- read_csv(params$report.data)
- 
+
 ```
- 
+
 ```{r formatdf}
- 
+
  
 df <- df 
  
  
 #create link in the ISRCTN column 
 #add heading to the Title column and merge ISRCTN and title columns
- 
+
 df <- df %>%
 
 mutate(URL = ISRCTN) %>%
@@ -49,14 +48,14 @@ mutate(URL = ISRCTN) %>%
 # Study number from ISRCTN column 
  
 mutate(ISRCTN = str_replace(ISRCTN, "^", "**Study number:** ")) %>%
- 
+
  
 # Alternative names and numbers from EudraCT/CTIS number column. Merge IRAS number, clinicaltrials.gov number (not often filled in) 
 # Replace 'Nil known' and blank entries with NA 
   
 mutate(`EudraCT/CTIS number`= na_if(`EudraCT/CTIS number`, "Nil known"))  %>%
 mutate(`ClinicalTrials.gov number`= na_if(`ClinicalTrials.gov number`, "Nil known")) %>%
- 
+
 mutate(`EudraCT/CTIS number`= na_if(`EudraCT/CTIS number`,"Nil Known"))  %>%
 mutate(`ClinicalTrials.gov number`= na_if(`ClinicalTrials.gov number`, "Nil Known")) %>% 
   
@@ -73,16 +72,16 @@ unite(`EudraCT/CTIS number`, `EudraCT/CTIS number`, `IRAS number`,`ClinicalTrial
 mutate(`EudraCT/CTIS number` = case_when(`EudraCT/CTIS number`== "" ~ "Not stated",
 TRUE ~ `EudraCT/CTIS number`))  %>%
 mutate(`EudraCT/CTIS number` = str_replace(`EudraCT/CTIS number`, "^", "**Alternative names or numbers:** ")) %>%
- 
+
   
 # Add title to existing phase column, remove entries that say Not Applicable, remove NAs
- 
+
 mutate(Phase = str_replace_all(Phase, "Not Applicable", "Not stated")) %>%
 mutate(Phase = str_replace_na(Phase, "Not stated")) %>%
 mutate(Phase = str_replace(Phase, "^", "**Phase:** ")) %>%
- 
+
 # Add new, blank columns for 'methods or purpose' field
- 
+
 mutate(MoP = "**Methods or purpose:** *(if not clear from title)*") %>%
   
  
@@ -92,7 +91,7 @@ mutate(MoP = "**Methods or purpose:** *(if not clear from title)*") %>%
 mutate(`Age group` = str_replace(`Age group`, "^", "**Population:** ")) %>%
 unite(`Age group`, `Age group`, Sex , sep = "; ", na.rm=TRUE) %>%
 mutate(`Age group` = str_replace(`Age group` , "Both" , "Male and Female")) %>%
- 
+
  
 # Number of patients from Target number of participants column 
  
@@ -100,15 +99,15 @@ mutate(`Target number of participants` = str_replace(`Target number of participa
        
   
 # Add new, blank column for 'Primary outcomes' field
- 
+
 mutate(Primary_outcomes = "**Primary outcomes:**") %>%
- 
+
  
 # Status from Overall study status column. Merge Recruitment status. Might need to add if 'if else' here to say, If it says 'completed', don't add the recruitment status. 
  
 mutate(`Overall study status` = str_replace(`Overall study status`, "^", "**Status:** ")) %>%
 unite(`Overall study status`, `Overall study status`, `Recruitment status`, sep = "- ", na.rm=TRUE) %>%
- 
+
  
 # Start date from Overall study start date column
 #Change date format to month & year 
@@ -120,11 +119,11 @@ mutate(`Overall study start date` = str_replace(`Overall study start date`, "^",
   
 mutate(`Primary completion date` = "**Primary completion date:** Not stated" ) %>%  
  
-# Study completion date from Overall study end date column. 
+# Study completion date from Completion date column. 
 #Change date format to month & year
   
-mutate(`Overall study end date`=format(ymd(`Overall study end date`),"%B %Y")) %>%
-mutate(`Overall study end date` = str_replace(`Overall study end date`, "^", "**Study completion date:** ")) %>%
+mutate(`Completion date`=format(ymd(`Completion date`),"%B %Y")) %>%
+mutate(`Completion date` = str_replace(`Completion date`, "^", "**Study completion date:** ")) %>%
   
  
 # Results from Basic results (9) column
@@ -134,14 +133,14 @@ mutate(`Overall study end date` = str_replace(`Overall study end date`, "^", "**
 mutate(`Basic results...9` = 
          case_when(is.na(`Basic results...9`) != TRUE ~ paste("**Results**: [Available at ISRCTN]", URL, sep = ""),
                   (is.na(`Basic results...9`) == TRUE ~ "**Results**: not available at ISRCTN"))) %>%
- 
+
  
 #create a blank column to add a space between entries in Word doc 
 mutate(blank = "\\")  
  
   
-df<-select(df,Title,ISRCTN,`EudraCT/CTIS number`,Phase,MoP,`Age group`,`Target number of participants`,Primary_outcomes, `Overall study status`, `Overall study start date`,`Primary completion date`,`Overall study end date`,`Basic results...9`, blank)
- 
+df<-select(df,Title,ISRCTN,`EudraCT/CTIS number`,Phase,MoP,`Age group`,`Target number of participants`,Primary_outcomes, `Overall study status`, `Overall study start date`,`Primary completion date`,`Completion date`,`Basic results...9`, blank)
+
  
  
 kable(df[1:14], col.names = NULL) 
