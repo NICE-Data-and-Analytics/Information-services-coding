@@ -1,0 +1,133 @@
+---
+output: word_document
+params:
+  report.data: NA
+  table: [some object]
+---
+ 
+```{r setup, echo=FALSE, message=FALSE, warning=FALSE}
+ 
+library(kableExtra)
+library(knitr)
+library(tidyverse)
+library(lubridate)
+
+knitr::opts_chunk$set(echo = FALSE,
+                      warning = FALSE,
+                      message = FALSE)
+ 
+```
+ 
+```{r loaddata}
+ 
+#Import CSV file, using filepath from params object created in shiny app
+df <- read_csv(params$report.data)
+ 
+```
+ 
+```{r formatdf}
+ 
+df <- df %>%
+
+
+ 
+#filter out all instances where a clinicaltrials.gov/ISRCTN record exists.
+  
+  filter(`Source Register`!= "ClinicalTrials.gov")%>%
+  filter(`Source Register`!= "ISRCTN")%>%
+  
+#remove all instances of new lines (\\n) and line indents (\\r). Add brackets to the web address
+  mutate(`web address` = str_remove_all(`web address`, "\\r\\n"))%>%
+  mutate(`web address`= str_replace(`web address`, "^", "(")) %>%
+  mutate(`web address`= str_replace(`web address`, "$", ")")) %>%
+
+#one trial has a line break so the title isn't hyperlinked. 
+  
+  mutate(`Scientific title` = str_remove_all(`Scientific title`, "\\r\\n"))%>%
+  
+#remove all trailing white space after the last character  
+  mutate(`Scientific title` = str_trim(`Scientific title`, side = c("right")))%>%
+  
+#add heading to the title column and add square brackets to the title. Merge the scientific title and web address columns. Add heading to the trial id column
+  mutate(`Scientific title` = str_replace(`Scientific title`, "^", "**Title:** [")) %>%
+  mutate(`Scientific title` = str_replace(`Scientific title`, "$", "]")) %>%
+  unite(`Scientific title`, `Scientific title`, `web address`, sep = "", na.rm=TRUE)%>%
+  mutate(TrialID = str_replace(TrialID, "^", "**Study number:** ")) %>%
+
+#remove all trailing white space after the data in the phase column. Replace all irrelevant text in the phase column with a number (1,2,3 or 4)
+  mutate(Phase = str_trim(Phase, side = c("right")))%>%
+  mutate(Phase = str_replace_all(Phase, "Post-market|Post Marketing Surveillance","4"))%>%
+  mutate(Phase = str_remove_all(Phase, "Phase|phase|study|Study"))%>%
+  mutate(Phase = str_remove_all(Phase, "^-"))%>%
+  mutate(Phase = str_replace_all(Phase, "-", "/"))%>%
+  mutate(Phase = str_replace_all(Phase, "III|iii|three|THREE|Three", "3"))%>%
+  mutate(Phase = str_replace_all(Phase, "IV|iv|four|FOUR|Four", "4"))%>%
+  mutate(Phase = str_replace_all(Phase, "II|ii|two|Two", "2"))%>%
+  mutate(Phase = str_replace_all(Phase, "I|i|one|One", "1")) %>%
+
+#replace all open brackets with a semi colon    
+  mutate(Phase = str_replace_all(Phase, "\\(|\\)", ";")) %>%
+  mutate(Phase = str_remove_all(Phase, " "))%>%
+  mutate(Phase = str_replace_na(Phase, "Not stated"))%>%
+  
+#remove duplicate lines in the list of phases
+  mutate(Phase = sapply(Phase, function(Phase) paste(unique(unlist(strsplit(Phase, ";"))), collapse = ";")))%>%
+  
+#these are to remove unique instances of text and replace with the phase number where we couldn't batch remove them  
+  mutate(Phase = str_remove(Phase, "Humanpharmacology;1;:no"))%>%
+  mutate(Phase = str_replace(Phase, "Humanpharmacology;1;:yes", "1"))%>%
+  mutate(Phase = str_remove(Phase, "Therapeut1cexploratory;2;:no"))%>%
+  mutate(Phase = str_replace(Phase, "Therapeut1cexploratory;2;:yes", "2"))%>%
+  mutate(Phase = str_remove(Phase, "Therapeut1cconf1rmatory/;3;:no"))%>%#
+  mutate(Phase = str_replace(Phase, "Therapeut1cconf1rmatory/;3;:yes", "3"))%>%
+  mutate(Phase = str_remove(Phase, "Therapeut1cuse;4;:no"))%>%
+  mutate(Phase = str_replace(Phase, "Therapeut1cuse;4;:yes", "4"))%>%
+  
+#add heading to the phase column and inclusion columns. Merge the inclusion columns and separate data with a semi colon.   
+  mutate(Phase = str_replace(Phase, "^", "**Phase:** "))%>%
+  mutate(Methods = "**Methods or purpose:** _Please complete_") %>%
+  mutate(Population = "**Population:** ")%>%
+  mutate(`Inclusion agemin` = str_replace(`Inclusion agemin`, "^", "Minimum age: "))%>%
+  mutate(`Inclusion agemax` = str_replace(`Inclusion agemax`, "^", "Maximum age: "))%>%
+  mutate(`Inclusion gender` = str_replace(`Inclusion gender`, "^", "Gender: "))%>%
+  unite(Population, Population, `Inclusion agemin`, `Inclusion agemax`, `Inclusion gender`, `Inclusion Criteria`, sep = "; ", na.rm=TRUE)%>%
+  
+#reformat and remove irrelevant text. Replace all semi colons in the population column with bullet points  
+  mutate(Population = str_remove_all(Population, "<br>|<br/ >|&#45"))%>%
+  mutate(Population = str_replace_all(Population, ";", "\n\n• "))%>%
+  mutate(`Target size` = str_replace(`Target size`, "^", "**No of Patients:** "))%>%
+  mutate(`Primary outcome` = str_remove_all(`Primary outcome`,"<br>|<br>â€¢|<br/ ><br>|(&#37;)"))%>%
+  mutate(`Primary outcome` = str_replace(`Primary outcome`, "^", "**Primary outcomes:**\n\n • "))%>%
+  mutate(`Primary outcome` = str_replace_all(`Primary outcome`, ";", "\n\n• "))%>%
+  mutate(`Recruitment Status` = str_replace(`Recruitment Status`, "^", "**Status:** "))%>%
+  
+  mutate(`Date registration` = with(
+    .,
+    if ("Date registration" %in% names(.)) {
+      format(dmy(`Date registration`), "%B %Y")
+    } else if ("Date registration3" %in% names(.)) {
+      format(ymd(`Date registration3`), "%B %Y")
+    } else {
+      NA_character_
+    }
+  )) %>%
+  mutate(`Date registration` = str_replace(`Date registration`, "^", "**Start date:** ")) %>%
+  mutate(Primarydate = "**Primary completion date:** Not stated") %>%
+  mutate(Completiondate = "**Study completion date:** Not stated") %>%
+
+#add results heading to the results url link column. If there is no value in the results url link column, replace with "not available.." text 
+  mutate(`results url link` = str_replace(`results url link`, "^", "**Results: **"))%>%
+  mutate(`results url link`= na_if(`results url link`, "| "))%>%
+  mutate(`results url link` = replace_na(`results url link`, "**Results:** Not available via trials registry")) %>%
+  
+ 
+#create a blank column to add a space between entries in Word doc 
+mutate(blank = "\\")  
+ 
+  
+df<-select(df,`Scientific title`, TrialID, Phase, Methods, Population, `Target size`, `Primary outcome`, `Recruitment Status`, `Date registration`, Primarydate, Completiondate, `results url link`, blank)  
+           
+ 
+kable(df[1:13], col.names = NULL) 
+ 
+```
