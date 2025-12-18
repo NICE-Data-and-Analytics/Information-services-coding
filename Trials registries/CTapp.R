@@ -2,7 +2,6 @@ library(shiny)
 library(shinydashboard)
 library(tidyverse)
 library(lubridate)
-library(here)
 library(spsComps)
 library(kableExtra) 
 
@@ -33,7 +32,7 @@ server <- function(input, output) {
     
     filename = "report.doc",
     content = function(file) {
-      tempReport <- file.path(tempdir(), "CTcode2.Rmd")
+      tempReport <- file.path(tempdir(), "CTcode.Rmd")
       file.copy("CTcode.Rmd", tempReport, overwrite = TRUE)
       params <- list(report.data = input$inputfile$datapath)
       rendered_report <- rmarkdown::render(
