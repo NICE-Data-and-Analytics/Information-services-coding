@@ -135,6 +135,7 @@ reformat_published <- function(df, Link, Title, `Reference number`, Published, `
   mutate(`Reference number` = str_replace_all(`Reference number`, "^MTG", "NICE medical technologies guidance "))%>%
   mutate(`Reference number` = str_replace_all(`Reference number`, "^MPG", "NICE medicines practice guideline "))%>%
   mutate(`Reference number` = str_replace_all(`Reference number`, "^HTE", "NICE health technology evaluation "))%>% 
+  mutate(`Reference number` = str_replace_all(`Reference number`, "^HTG", "NICE healthtech guidance "))%>%   
   mutate(`Reference number` = str_replace_all(`Reference number`, "^CSG", "NICE cancer service guideline "))%>%
   mutate(`Reference number` = str_replace_all(`Reference number`, "^PH", "NICE guideline "))%>%
   mutate(`Reference number` = str_replace_all(`Reference number`, "^SG", "NICE safe staffing guideline "))%>%
