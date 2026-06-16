@@ -495,7 +495,11 @@ if ("Published" %in% cols) {
 }
  
 }
+<<<<<<< HEAD
 ``` 
+=======
+```
+>>>>>>> 2e1c796c8306c0fc9dd28f755d2decf95ed31989
 
 ```{r bind-clean, echo=FALSE}
 library(tibble)
