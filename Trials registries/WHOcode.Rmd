@@ -12,6 +12,7 @@ library(knitr)
 library(tidyverse)
 library(lubridate)
 
+ 
 knitr::opts_chunk$set(echo = FALSE,
                       warning = FALSE,
                       message = FALSE)
@@ -26,108 +27,122 @@ df <- read_csv(params$report.data)
 ```
  
 ```{r formatdf}
+
+# previous issues with this script have arisen from...
+
+# R assuming that columns are the wrong data type on import
+# ISRCTN changing their column headings
+# ISRCTN reusing or reordering column headings
+
+# Worth checking all these if troubleshooting in future.  
+
+df <- df 
+colnames <- (make.unique(names(df)))
  
+#create link in the ISRCTN column 
+#add heading to the Title column and merge ISRCTN and title columns
+
 df <- df %>%
 
-
+  mutate(URL = ISRCTN) %>%
+  mutate(URL = str_replace(URL,"^", "https://www.isrctn.com/")) %>%
+  mutate(URL = str_replace(URL, "^", "("))%>%
+  mutate(URL = str_replace(URL, "$", ")"))%>%
+  mutate(Title = str_replace(Title, "^", "**Title:** [")) %>%
+  mutate(Title = str_replace(Title, "$", "]")) %>%
+  unite(Title, Title, URL, sep = "", na.rm=TRUE, remove = FALSE) %>%
  
-#filter out all instances where a clinicaltrials.gov/ISRCTN record exists.
-  
-  filter(`Source Register`!= "ClinicalTrials.gov")%>%
-  filter(`Source Register`!= "ISRCTN")%>%
-  
-#remove all instances of new lines (\\n) and line indents (\\r). Add brackets to the web address
-  mutate(`web address` = str_remove_all(`web address`, "\\r\\n"))%>%
-  mutate(`web address`= str_replace(`web address`, "^", "(")) %>%
-  mutate(`web address`= str_replace(`web address`, "$", ")")) %>%
+# Study number line created from ISRCTN column 
+ 
+  mutate(ISRCTN = str_replace(ISRCTN, "^", "**Study number:** ")) %>%
+ 
+# Convert columns with trial registry identifiers in into character columns (only strictly necessary if all entries are blank), then replace 'Nil known' and blank entries with NA. 
+# We'll combine the EudraCT/CTIS number; IRAS number and clinicaltrials.gov number columns (not often filled in) to form a single column containing all these identifiers. 
 
-#one trial has a line break so the title isn't hyperlinked. 
+  mutate(`EudraCT/CTIS number`= as.character(`EudraCT/CTIS number`)) %>%
+  mutate(`ClinicalTrials.gov number`= as.character(`ClinicalTrials.gov number`)) %>%
   
-  mutate(`Scientific title` = str_remove_all(`Scientific title`, "\\r\\n"))%>%
+  mutate(`EudraCT/CTIS number`= na_if(`EudraCT/CTIS number`, "Nil known"))  %>%
+  mutate(`ClinicalTrials.gov number`= na_if(`ClinicalTrials.gov number`, "Nil known")) %>%
+ 
+  mutate(`EudraCT/CTIS number`= na_if(`EudraCT/CTIS number`,"Nil Known"))  %>%
+  mutate(`ClinicalTrials.gov number`= na_if(`ClinicalTrials.gov number`, "Nil Known")) %>% 
   
-#remove all trailing white space after the last character  
-  mutate(`Scientific title` = str_trim(`Scientific title`, side = c("right")))%>%
+  mutate(`EudraCT/CTIS number`= na_if(`EudraCT/CTIS number`,"N/A"))  %>%
+  mutate(`ClinicalTrials.gov number`= na_if(`ClinicalTrials.gov number`, "N/A")) %>%
   
-#add heading to the title column and add square brackets to the title. Merge the scientific title and web address columns. Add heading to the trial id column
-  mutate(`Scientific title` = str_replace(`Scientific title`, "^", "**Title:** [")) %>%
-  mutate(`Scientific title` = str_replace(`Scientific title`, "$", "]")) %>%
-  unite(`Scientific title`, `Scientific title`, `web address`, sep = "", na.rm=TRUE)%>%
-  mutate(TrialID = str_replace(TrialID, "^", "**Study number:** ")) %>%
-
-#remove all trailing white space after the data in the phase column. Replace all irrelevant text in the phase column with a number (1,2,3 or 4)
-  mutate(Phase = str_trim(Phase, side = c("right")))%>%
-  mutate(Phase = str_replace_all(Phase, "Post-market|Post Marketing Surveillance","4"))%>%
-  mutate(Phase = str_remove_all(Phase, "Phase|phase|study|Study"))%>%
-  mutate(Phase = str_remove_all(Phase, "^-"))%>%
-  mutate(Phase = str_replace_all(Phase, "-", "/"))%>%
-  mutate(Phase = str_replace_all(Phase, "III|iii|three|THREE|Three", "3"))%>%
-  mutate(Phase = str_replace_all(Phase, "IV|iv|four|FOUR|Four", "4"))%>%
-  mutate(Phase = str_replace_all(Phase, "II|ii|two|Two", "2"))%>%
-  mutate(Phase = str_replace_all(Phase, "I|i|one|One", "1")) %>%
-
-#replace all open brackets with a semi colon    
-  mutate(Phase = str_replace_all(Phase, "\\(|\\)", ";")) %>%
-  mutate(Phase = str_remove_all(Phase, " "))%>%
-  mutate(Phase = str_replace_na(Phase, "Not stated"))%>%
+  mutate(`EudraCT/CTIS number`= na_if(`EudraCT/CTIS number`,"Nil known."))  %>%
+  mutate(`ClinicalTrials.gov number`= na_if(`ClinicalTrials.gov number`, "Nil known.")) %>%  
   
-#remove duplicate lines in the list of phases
-  mutate(Phase = sapply(Phase, function(Phase) paste(unique(unlist(strsplit(Phase, ";"))), collapse = ";")))%>%
+  mutate(`EudraCT/CTIS number`= na_if(`EudraCT/CTIS number`,""))  %>%
+  mutate(`ClinicalTrials.gov number`= na_if(`ClinicalTrials.gov number`, "")) %>%
+    
+  unite(`EudraCT/CTIS number`, `EudraCT/CTIS number`, `IRAS number`,`ClinicalTrials.gov number` , sep = "; ", na.rm=TRUE) %>%
+  mutate(`EudraCT/CTIS number` = case_when(`EudraCT/CTIS number`== "" ~ "Not stated",
+TRUE ~ `EudraCT/CTIS number`))  %>%
+  mutate(`EudraCT/CTIS number` = str_replace(`EudraCT/CTIS number`, "^", "**Alternative names or numbers:** ")) %>%
   
-#these are to remove unique instances of text and replace with the phase number where we couldn't batch remove them  
-  mutate(Phase = str_remove(Phase, "Humanpharmacology;1;:no"))%>%
-  mutate(Phase = str_replace(Phase, "Humanpharmacology;1;:yes", "1"))%>%
-  mutate(Phase = str_remove(Phase, "Therapeut1cexploratory;2;:no"))%>%
-  mutate(Phase = str_replace(Phase, "Therapeut1cexploratory;2;:yes", "2"))%>%
-  mutate(Phase = str_remove(Phase, "Therapeut1cconf1rmatory/;3;:no"))%>%#
-  mutate(Phase = str_replace(Phase, "Therapeut1cconf1rmatory/;3;:yes", "3"))%>%
-  mutate(Phase = str_remove(Phase, "Therapeut1cuse;4;:no"))%>%
-  mutate(Phase = str_replace(Phase, "Therapeut1cuse;4;:yes", "4"))%>%
+# Add title to existing phase column, remove entries that say Not Applicable, remove NAs
+ 
+  mutate(Phase = str_replace_all(Phase, "Not Applicable", "Not stated")) %>%
+  mutate(Phase = str_replace_na(Phase, "Not stated")) %>%
+  mutate(Phase = str_replace(Phase, "^", "**Phase:** ")) %>%
+ 
+# Add new, blank columns for 'methods or purpose' field
+ 
+  mutate(MoP = "**Methods or purpose:** *(if not clear from title)*") %>%
   
-#add heading to the phase column and inclusion columns. Merge the inclusion columns and separate data with a semi colon.   
-  mutate(Phase = str_replace(Phase, "^", "**Phase:** "))%>%
-  mutate(Methods = "**Methods or purpose:** _Please complete_") %>%
-  mutate(Population = "**Population:** ")%>%
-  mutate(`Inclusion agemin` = str_replace(`Inclusion agemin`, "^", "Minimum age: "))%>%
-  mutate(`Inclusion agemax` = str_replace(`Inclusion agemax`, "^", "Maximum age: "))%>%
-  mutate(`Inclusion gender` = str_replace(`Inclusion gender`, "^", "Gender: "))%>%
-  unite(Population, Population, `Inclusion agemin`, `Inclusion agemax`, `Inclusion gender`, `Inclusion Criteria`, sep = "; ", na.rm=TRUE)%>%
+# Population from Age group column. Merge with Sex column.
+# When trial recruits both male and female, it shows as 'both' - we may need to add something extra here  
   
-#reformat and remove irrelevant text. Replace all semi colons in the population column with bullet points  
-  mutate(Population = str_remove_all(Population, "<br>|<br/ >|&#45"))%>%
-  mutate(Population = str_replace_all(Population, ";", "\n\n• "))%>%
-  mutate(`Target size` = str_replace(`Target size`, "^", "**No of Patients:** "))%>%
-  mutate(`Primary outcome` = str_remove_all(`Primary outcome`,"<br>|<br>â€¢|<br/ ><br>|(&#37;)"))%>%
-  mutate(`Primary outcome` = str_replace(`Primary outcome`, "^", "**Primary outcomes:**\n\n • "))%>%
-  mutate(`Primary outcome` = str_replace_all(`Primary outcome`, ";", "\n\n• "))%>%
-  mutate(`Recruitment Status` = str_replace(`Recruitment Status`, "^", "**Status:** "))%>%
+  mutate(`Age group` = str_replace(`Age group`, "^", "**Population:** ")) %>%
+  unite(`Age group`, `Age group`, Sex , sep = "; ", na.rm=TRUE) %>%
+  mutate(`Age group` = str_replace(`Age group` , "Both" , "Male and Female")) %>%
+ 
+ 
+# Number of patients from Target number of participants column 
+ 
+  mutate(`Target number of participants` = str_replace(`Target number of participants`, "^", "**Participants:** ")) %>%
+       
+# Add new, blank column for 'Primary outcomes' field
+ 
+  mutate(Primary_outcomes = "**Primary outcomes:**") %>%
+ 
+# Status from Overall study status column. 
+ 
+  mutate(`Overall study status` = str_replace(`Overall study status`, "^", "**Status:** ")) %>%
+ 
+# Start date from Date of first enrolment column
+# Change date format to month & year. Note that if you're viewing the input file in Excel it may reformat dates to DDMMYYYY whereas in the original CSV they're YYYYMMDD. 
+ 
+  mutate(`Date of first enrolment`= format(ymd(`Date of first enrolment`),"%B %Y")) %>%
+  mutate(`Date of first enrolment` = str_replace(`Date of first enrolment`, "^", "**Start date:** ")) %>%  
+ 
+# Create primary completion date column - info not available in ISRCTN but this keeps the report format consistent with other registries.  
   
-  mutate(`Date registration` = with(
-    .,
-    if ("Date registration" %in% names(.)) {
-      format(dmy(`Date registration`), "%B %Y")
-    } else if ("Date registration3" %in% names(.)) {
-      format(ymd(`Date registration3`), "%B %Y")
-    } else {
-      NA_character_
-    }
-  )) %>%
-  mutate(`Date registration` = str_replace(`Date registration`, "^", "**Start date:** ")) %>%
-  mutate(Primarydate = "**Primary completion date:** Not stated") %>%
-  mutate(Completiondate = "**Study completion date:** Not stated") %>%
-
-#add results heading to the results url link column. If there is no value in the results url link column, replace with "not available.." text 
-  mutate(`results url link` = str_replace(`results url link`, "^", "**Results: **"))%>%
-  mutate(`results url link`= na_if(`results url link`, "| "))%>%
-  mutate(`results url link` = replace_na(`results url link`, "**Results:** Not available via trials registry")) %>%
+  mutate(`Primary completion date` = "**Primary completion date:** Not stated" ) %>%  
+ 
+# Study completion date from Completion date column. 
+# Change date format to month & year
   
+  mutate(`Completion date`= format(ymd(`Completion date`),"%B %Y")) %>%
+  mutate(`Completion date` = str_replace(`Completion date`, "^", "**Study completion date:** ")) %>%
+  
+ 
+# Create a new column from Basic results column. There's actually two columns with that name so we have to specify it by index number. Meghna points out there's a function to make names unique in the first instance: (make.unique(names(df))) after importing the CSV
+#when column has results, add link to ISRCTN record 
+#when column has no results, add text to say 'results not available from ISRCTN' 
+ 
+  mutate(`Results available` = 
+         case_when(is.na(`Basic results...8`) != TRUE ~ paste("**Results**: [Available at ISRCTN]", URL, sep = ""),
+                  (is.na(`Basic results...8`) == TRUE ~ "**Results**: not available at ISRCTN"))) %>%
  
 #create a blank column to add a space between entries in Word doc 
-mutate(blank = "\\")  
+  mutate(blank = "\\")  
+
+df<-select(df,Title,ISRCTN,`EudraCT/CTIS number`,Phase,MoP,`Age group`,`Target number of participants`,Primary_outcomes, `Overall study status`, `Date of first enrolment`,`Primary completion date`,`Completion date`,`Results available`, blank)
  
-  
-df<-select(df,`Scientific title`, TrialID, Phase, Methods, Population, `Target size`, `Primary outcome`, `Recruitment Status`, `Date registration`, Primarydate, Completiondate, `results url link`, blank)  
-           
- 
-kable(df[1:13], col.names = NULL) 
- 
+kable(df[1:14], col.names = NULL) 
+
+
 ```
