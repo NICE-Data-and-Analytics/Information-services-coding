@@ -128,7 +128,7 @@ TRUE ~ `EudraCT/CTIS number`))  %>%
   mutate(`Completion date` = str_replace(`Completion date`, "^", "**Study completion date:** ")) %>%
   
  
-# Create a new column from Basic results column. There's actually two columns with that name so we have to specify it by index number. Meghna points out there's a function to make names unique in the first instance: (make.unique(names(df))) after importing the CSV
+# Create a new column from Basic results column. .
 #when column has results, add link to ISRCTN record 
 #when column has no results, add text to say 'results not available from ISRCTN' 
  
