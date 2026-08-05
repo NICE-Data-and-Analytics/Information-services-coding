@@ -129,8 +129,9 @@ TRUE ~ `EudraCT/CTIS number`))  %>%
   
  
 # Create a new column from Basic results column. .
-#when column has results, add link to ISRCTN record 
-#when column has no results, add text to say 'results not available from ISRCTN' 
+# when column has results, add link to ISRCTN record 
+# when column has no results, add text to say 'results not available from ISRCTN'
+# Note that `Basic results...8` is the name given to the first `Basic results` column by the make.unique function. Might be an idea to so something with regex to make it recognise the first instance rather than go by number in case ISRCTN change the column ordering again.
  
   mutate(`Results available` = 
          case_when(is.na(`Basic results...8`) != TRUE ~ paste("**Results**: [Available at ISRCTN]", URL, sep = ""),
