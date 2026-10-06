@@ -2,6 +2,7 @@
 output:
   word_document:
     reference_docx: reference_doc.docx
+  pdf_document: default
 output_file: test_document.docx
 ---
 
@@ -29,120 +30,204 @@ if (length(text_files) == 0) {
 ```{r reformat-functions, echo=FALSE}
 reformat_in_development <- function(df) {
 
-  # ---- Defensive column creation ----
-  if (!"Expected publication date" %in% names(df)) {
-    df$`Expected publication date` <- NA_character_
-  }
-  if (!"Type" %in% names(df)) {
-    df$Type <- NA_character_
-  }
-  if (!"Link" %in% names(df)) {
-    df$Link <- NA_character_
-  }
-  if (!"Title" %in% names(df)) {
-    df$Title <- NA_character_
-  }
-  if (!"ID" %in% names(df)) {
-    df$ID <- NA_character_
-  }
-  if (!"Medtech_ID" %in% names(df)) {
-    df$Medtech_ID <- NA_character_
-  }
+# ---- Defensive column creation ----
+if (!"Expected publication date" %in% names(df)) {
+df$`Expected publication date` <- NA_character_
+}
 
-  df <- df %>%
+if (!"Type" %in% names(df)) {
+df$Type <- NA_character_
+}
 
-    # ---- Strip days from Expected publication date ----
-    mutate(
-      `Expected publication date` =
-        str_remove_all(`Expected publication date`, "[:digit:][:digit:] |[:digit:] ")
-    ) %>%
+if (!"Link" %in% names(df)) {
+df$Link <- NA_character_
+}
 
-    # ---- Extract ID from Title (before any linking) ----
-    mutate(ID = case_when(
-      str_ends(Title, "\\]|ID[:digit:]+$|TS ID [:digit:]+$") ~ Title,
-      TRUE ~ NA_character_
-    )) %>%
-    mutate(ID = str_remove_all(ID, "[:punct:]|[:alpha:]")) %>%
-    mutate(ID = str_extract(ID, "[:digit:]+$")) %>%
-    mutate(ID = if_else(
-      str_starts(ID, "\\d"),
-      paste0(" [ID", ID, "]"),
-      ""
-    )) %>%
+if (!"Title" %in% names(df)) {
+df$Title <- NA_character_
+}
 
-    # ---- Extract Medtech ID (before any linking) ----
-    mutate(Medtech_ID = case_when(
-      str_starts(Title, "GID-MT[:digit:]+ ") ~ Title,
-      str_ends(Title, " \\(MT[:digit:]+\\)$") ~ Title,
-      TRUE ~ NA_character_
-    )) %>%
-    mutate(Medtech_ID = str_extract(Medtech_ID, "MT[:number:]+")) %>%
-    mutate(Medtech_ID = if_else(
-      !is.na(Medtech_ID),
-      paste0(" [", Medtech_ID, "]"),
-      ""
-    )) %>%
+# ---- Begin transformations ----
+df <- df %>%
 
-    # ---- Clean Title text (remove IDs now captured) ----
-    mutate(Title = case_when(
-      str_ends(Title, "\\]|ID[:digit:]+$|TS ID [:digit:]+$|  \\[[:digit:]+\\]$") ~
-        str_remove_all(
-          Title,
-          " TS ID.+$| \\[ID.+$| ID[:digit:]+$| \\[[:digit:]+\\]$"
-        ),
-      str_starts(Title, "GID-MT[:digit:]+ ") ~
-        str_remove(Title, "GID-MT[:digit:]+ "),
-      str_ends(Title, " \\(MT[:digit:]+\\)$") ~
-        str_remove(Title, " \\(MT[:digit:]+\\)$"),
-      TRUE ~ Title
-    )) %>%
-    
-        # Some entries are split across two rows for reasons that we don't understand. The next chunk of code is designed to identify these and add a note that they need manually checking.
-    
+# ---- Extract identifier from URL ----
+# Examples:
+# gid-ta11470 becomes GID-TA11470
+# gid-qs10035 becomes GID-QS10035
+# gid-mt12345 becomes GID-MT12345
+
 mutate(
-  Link = case_when(
-    !is.na(Link) & str_starts(Link, "\\(http") ~ Link,
-    !is.na(Link) & str_starts(Link, "http")   ~ paste0("(", Link, ")"),
-    TRUE ~ " **MANUALLY CHECK THIS LINE AND THE ONE ABOVE**"
-  )
+URL_ID = str_extract(
+Link,
+regex(
+"gid-[a-z]+[0-9]+",
+ignore_case = TRUE
+)
+)
 ) %>%
 
 mutate(
-  Title = paste0("[", Title, "]")
+URL_ID = str_to_upper(URL_ID)
 ) %>%
-    unite(Title, Title, Link, sep = "", na.rm = TRUE) %>%
 
-    # ---- NORMALISE TYPE *AFTER* LINK ----
-  mutate(Type = str_to_lower(Type)) %>%
-  mutate(Type = case_when(
-  is.na(Type) | Type == "" ~ "",
-  str_starts(Type, "nice") ~ str_replace(Type, "nice", ". NICE"),
-  TRUE ~ paste0(". NICE ", Type)
-)) %>%
+# ---- Remove existing IDs from the title ----
+# Removes formats including:
+# [GID-TA12010]
+# GID-TA12010
+# [ID6389]
+# ID6389
+# [TSID11810]
+# TSID11810
+# [TS ID 11810]
+# TS ID 11810
+# [MT12345]
+# (MT12345)
 
-    # ---- Format Expected publication date text ----
-    mutate(`Expected publication date` = case_when(
-      str_ends(`Expected publication date`, "TBC") ~
-        ". Publication date to be confirmed",
-      !is.na(`Expected publication date`) & `Expected publication date` != "" ~
-        paste(". Publication expected", `Expected publication date`),
-      TRUE ~ ""
-    )) %>%
+mutate(
+Title = str_remove_all(
+Title,
+regex(
+paste0(
+"\\s*",
+"(",
+"\\[(GID-[A-Z]+\\s*\\d+|TS\\s*ID\\s*\\d+|ID\\s*\\d+|MT\\s*\\d+)\\]",
+"|",
+"\\((MT\\s*\\d+)\\)",
+"|",
+"\\bGID-[A-Z]+\\s*\\d+\\b",
+"|",
+"\\bTS\\s*ID\\s*\\d+\\b",
+"|",
+"\\bID\\s*\\d+\\b",
+")",
+"\\s*"
+),
+ignore_case = TRUE
+)
+)
+) %>%
 
+# Remove extra spaces left behind after deleting IDs
 
-    # ---- FINAL MERGE ----
-    unite(
-      Merged,
-      Title,
-      Type,
-      ID,
-      Medtech_ID,
-      `Expected publication date`,
-      sep = "",
-      na.rm = TRUE
-    )
+mutate(
+Title = str_squish(Title)
+) %>%
 
-  df
+# ---- Strip days from Expected publication date ----
+# Retains the month and year only.
+
+mutate(
+`Expected publication date` =
+str_remove_all(
+`Expected publication date`,
+"[:digit:][:digit:] |[:digit:] "
+)
+) %>%
+
+# ---- Format the URL ----
+# If the URL is present, put round brackets around it.
+# If the URL is missing, flag the line for manual checking.
+
+mutate(
+Link = case_when(
+!is.na(Link) & str_starts(Link, "\\(http") ~ Link,
+
+!is.na(Link) & str_starts(Link, "http") ~
+paste0("(", Link, ")"),
+
+TRUE ~
+" **MANUALLY CHECK THIS LINE AND THE ONE ABOVE**"
+)
+) %>%
+
+# ---- Format the title ----
+# Put square brackets around the title.
+
+mutate(
+Title = paste0("[", Title, "]")
+) %>%
+
+# Combine the title and its associated URL.
+# This makes the title the clickable text.
+
+unite(
+Title,
+Title,
+Link,
+sep = "",
+na.rm = TRUE
+) %>%
+
+# ---- Normalise the guidance type ----
+
+mutate(
+Type = str_to_lower(Type)
+) %>%
+
+mutate(
+Type = case_when(
+is.na(Type) | Type == "" ~ "",
+
+str_starts(Type, "nice") ~
+str_replace(Type, "nice", ". NICE"),
+
+TRUE ~
+paste0(". NICE ", Type)
+)
+) %>%
+
+# ---- Format the URL identifier ----
+# Add a space before the identifier so it appears
+# immediately after the guidance type.
+
+mutate(
+URL_ID = case_when(
+!is.na(URL_ID) & URL_ID != "" ~
+paste0(" ", URL_ID),
+
+TRUE ~ ""
+)
+) %>%
+
+# ---- Format Expected publication date text ----
+
+mutate(
+`Expected publication date` = case_when(
+is.na(`Expected publication date`) |
+str_trim(`Expected publication date`) == "" ~ "",
+
+str_detect(
+str_trim(`Expected publication date`),
+regex(
+"^(tbc|to be confirmed)$",
+ignore_case = TRUE
+)
+) ~
+". Publication date to be confirmed",
+
+TRUE ~
+paste0(
+". Publication expected ",
+str_trim(`Expected publication date`)
+)
+)
+) %>%
+
+# ---- Create final merged output ----
+
+unite(
+Merged,
+Title,
+Type,
+URL_ID,
+`Expected publication date`,
+sep = "",
+na.rm = TRUE
+) %>%
+
+select(Merged)
+
+df
 }
 
 
@@ -196,7 +281,13 @@ mutate(
   mutate(`Reference number` = str_replace_all(`Reference number`, "^ESMPB", "NICE evidence summary ESMPB"))%>%
     
 # This code uses lubridate to reformat all the dates in the Published and Last Updated columns to display the year only 
-    
+  mutate(
+SortDate = case_when(
+!is.na(`Last updated`) &
+str_trim(`Last updated`) != "" ~ dmy(`Last updated`),
+TRUE ~ dmy(Published)
+)
+) %>% 
   mutate(Published = format(dmy(Published),"%Y")) %>%
   mutate(`Last updated` = format(dmy(`Last updated`),"%Y")) %>%
   
@@ -290,7 +381,7 @@ mutate(
 
 reformat_awaiting <- function(df) {
 
-  # ---- Defensive column creation (REQUIRED) ----
+  # ---- Defensive column creation ----
   if (!"Title" %in% names(df)) {
     df$Title <- NA_character_
   }
@@ -303,143 +394,447 @@ reformat_awaiting <- function(df) {
     df$Link <- NA_character_
   }
 
-  if (!"ID" %in% names(df)) {
-    df$ID <- NA_character_
-  }
-
-  if (!"Medtech_ID" %in% names(df)) {
-    df$Medtech_ID <- NA_character_
-  }
-
   # ---- Begin transformations ----
-#the code at the top deals with lines that are split in two when pasted into Notepad - it brings them back together
-  
-df <- df %>%
-
-  # --- Extract ID from title ---
-  mutate(ID = case_when(
-    str_ends(Title, "\\]|ID[:digit:]+$|TS ID [:digit:]+$") ~ Title,
-    TRUE ~ NA_character_
-  )) %>%
-  mutate(ID = str_remove_all(ID, "[:punct:]|[:alpha:]")) %>%
-  mutate(ID = str_extract(ID, "[:digit:]+$")) %>%
-  mutate(ID = if_else(str_starts(ID, "\\d"),
-                      paste0(" [ID", ID, "]"),
-                      "")) %>%
-
-  # --- Medtech ID ---
-  mutate(Medtech_ID = case_when(
-    str_starts(Title, "GID-MT[:digit:]+ ") ~ Title,
-    str_ends(Title, " \\(MT[:digit:]+\\)$") ~ Title,
-    TRUE ~ NA_character_
-  )) %>%
-  mutate(Medtech_ID = str_extract(Medtech_ID, "MT[:number:]+")) %>%
-  mutate(Medtech_ID = if_else(!is.na(Medtech_ID),
-                              paste0(" [", Medtech_ID, "]"),
-                              "")) %>%
-
-  # --- Clean title text ---
-  mutate(Title = case_when(
-    str_ends(Title, "\\]|ID[:digit:]+$|TS ID [:digit:]+$|  \\[[:digit:]+\\]$") ~
-      str_remove_all(Title,
-        " TS ID.+$| \\[ID.+$| ID[:digit:]+$| \\[[:digit:]+\\]$"
-      ),
-    str_starts(Title, "GID-MT[:digit:]+ ") ~
-      str_remove(Title, "GID-MT[:digit:]+ "),
-    str_ends(Title, " \\(MT[:digit:]+\\)$") ~
-      str_remove(Title, " \\(MT[:digit:]+\\)$"),
-    TRUE ~ Title
-  )) %>%
-
-        
-    # Some entries are split across two rows for reasons that we don't understand. The next chunk of code is designed to identify these and add a note that they need manually checking.
-    
-mutate(
-  Link = case_when(
-    !is.na(Link) & str_starts(Link, "\\(http") ~ Link,
-    !is.na(Link) & str_starts(Link, "http")   ~ paste0("(", Link, ")"),
-    TRUE ~ " **MANUALLY CHECK THIS LINE AND THE ONE ABOVE**"
-  )
-) %>%
-  
-mutate(
-  Title = paste0("[", Title, "]")
-) %>%
-  unite(Title, Title, Link, sep = "", na.rm = TRUE) %>%
-
-  # ---- NORMALISE TYPE *AFTER* LINK ----
-  mutate(Type = str_to_lower(Type)) %>%
-  mutate(Type = case_when(
-  is.na(Type) | Type == "" ~ "",
-  str_starts(Type, "nice") ~ str_replace(Type, "nice", ". NICE"),
-  TRUE ~ paste0(". NICE ", Type)
-)) %>%
-
-  # FINAL MERGE
-  unite(Merged, Title, Type, ID, Medtech_ID, sep = "", na.rm = TRUE) %>%
-  select(Merged)
-
-  df
- }
-
-reformat_prioritisation <- function(df) {
-
-  # ---- Defensive column creation ----
-  if (!"Title" %in% names(df)) {
-    df$Title <- NA_character_
-  }
-
-  if (!"Link" %in% names(df)) {
-    df$Link <- NA_character_
-  }
-
-  if (!"Decision date" %in% names(df)) {
-    df$`Decision date` <- NA_character_
-  }
-
-  # ---- Begin transformation ----
   df <- df %>%
 
-# ---- Create markdown hyperlink (ENDS AT ID) ----
-mutate(
-  Link = if_else(
-    !is.na(Link) & str_starts(Link, "http"),
-    paste0("(", Link, ")"),
-    ""
-  ),
-  Title = paste0("[", Title, "]")
-) %>%
-    
-    # Some entries are split across two rows for reasons that we don't understand. The next chunk of code is designed to identify these and add a note that they need manually checking.
-    
-mutate(
-  Link = case_when(
-    !is.na(Link) & str_starts(Link, "\\(http") ~ Link,
-    !is.na(Link) & str_starts(Link, "http")   ~ paste0("(", Link, ")"),
-    TRUE ~ " **MANUALLY CHECK THIS LINE AND THE ONE ABOVE**"
-  )
-) %>%
-    
-unite(Title, Title, Link, sep = "", na.rm = TRUE) %>%
+    # ---- Extract the identifier from the URL ----
+    # Examples:
+    # gid-ta11470 becomes GID-TA11470
+    # gid-qs10035 becomes GID-QS10035
+    # gid-ipg10331 becomes GID-IPG10331
 
-    # --- Format decision date (bold prefix) ---
-    mutate(`Decision date` = case_when(
-      is.na(`Decision date`) | `Decision date` == "" ~ "",
-      TRUE ~ paste0(". Decision date: ", `Decision date`)
-    )) %>%
-    
-    # --- Create final merged output ---
+    mutate(
+      URL_ID = str_extract(
+        Link,
+        regex(
+          "gid-[a-z]+[0-9]+",
+          ignore_case = TRUE
+        )
+      )
+    ) %>%
+
+    mutate(
+      URL_ID = str_to_upper(URL_ID)
+    ) %>%
+
+    # ---- Remove existing IDs from the title ----
+    # Removes formats including:
+    # [GID-TA12010]
+    # GID-TA12010
+    # [ID6389]
+    # ID6389
+    # [TSID11810]
+    # TSID11810
+    # [TS ID 11810]
+    # TS ID 11810
+
+    mutate(
+      Title = str_remove_all(
+        Title,
+        regex(
+          "\\s*\\[(?:GID-[A-Z]+\\d+|TS\\s*ID\\s*\\d+|ID\\s*\\d+)\\]\\s*|\\s*\\b(?:GID-[A-Z]+\\d+|TS\\s*ID\\s*\\d+|ID\\s*\\d+)\\b\\s*",
+          ignore_case = TRUE
+        )
+      )
+    ) %>%
+
+    # Remove any extra spaces left after removing an ID
+
+    mutate(
+      Title = str_squish(Title)
+    ) %>%
+
+    # ---- Format the link ----
+    # Adds round brackets around the URL.
+
+    mutate(
+      Link = case_when(
+        !is.na(Link) & str_starts(Link, "\\(http") ~ Link,
+
+        !is.na(Link) & str_starts(Link, "http") ~
+          paste0("(", Link, ")"),
+
+        TRUE ~
+          " **MANUALLY CHECK THIS LINE AND THE ONE ABOVE**"
+      )
+    ) %>%
+
+    # ---- Format the title ----
+    # Adds square brackets around the title.
+
+    mutate(
+      Title = paste0("[", Title, "]")
+    ) %>%
+
+    # Combines the title and URL to create a clickable title.
+
     unite(
-      Merged,
       Title,
-      `Decision date`,
+      Title,
+      Link,
       sep = "",
       na.rm = TRUE
     ) %>%
 
-    select(Merged)
+    # ---- Normalise guidance type ----
 
-  df
+    mutate(
+      Type = str_to_lower(Type)
+    ) %>%
+
+    mutate(
+      Type = case_when(
+        is.na(Type) | Type == "" ~ "",
+
+        str_starts(Type, "nice") ~
+          str_replace(Type, "nice", ". NICE"),
+
+        TRUE ~
+          paste0(". NICE ", Type)
+      )
+    ) %>%
+
+# ---- Format URL identifier ----
+# Adds a space before the identifier so that it follows
+# the guidance type correctly.
+
+mutate(
+URL_ID = case_when(
+!is.na(URL_ID) & URL_ID != "" ~
+paste0(" ", URL_ID),
+
+TRUE ~ ""
+)
+) %>%
+
+# ---- Create final merged output ----
+
+unite(
+Merged,
+Title,
+Type,
+URL_ID,
+sep = "",
+na.rm = TRUE
+) %>%
+
+select(Merged)
+
+df
+}
+
+reformat_prioritisation <- function(df) {
+
+# ---- Defensive column creation ----
+if (!"Title" %in% names(df)) {
+df$Title <- NA_character_
+}
+
+if (!"Link" %in% names(df)) {
+df$Link <- NA_character_
+}
+
+if (!"Decision" %in% names(df)) {
+if (ncol(df) >= 4) {
+names(df)[4] <- "Decision"
+} else {
+df$Decision <- NA_character_
+}
+}
+
+if (!"Decision date" %in% names(df)) {
+df$`Decision date` <- NA_character_
+}
+
+# ---- Begin transformations ----
+df <- df %>%
+
+# ---- Extract identifier from URL ----
+# Examples:
+# gid-ta11470 becomes GID-TA11470
+# gid-qs10035 becomes GID-QS10035
+# gid-ipg10331 becomes GID-IPG10331
+
+mutate(
+URL_ID = str_extract(
+Link,
+regex(
+"gid-[a-z]+[0-9]+",
+ignore_case = TRUE
+)
+)
+) %>%
+
+mutate(
+URL_ID = str_to_upper(URL_ID)
+) %>%
+
+# ---- Remove existing IDs from the title ----
+# Removes formats including:
+# [GID-TA12010]
+# GID-TA12010
+# [ID6389]
+# ID6389
+# [TSID11810]
+# TSID11810
+# [TS ID 11810]
+# TS ID 11810
+
+mutate(
+Title = str_remove_all(
+Title,
+regex(
+paste0(
+"\\s*",
+"(",
+"\\[(GID-[A-Z]+\\s*\\d+|TS\\s*ID\\s*\\d+|ID\\s*\\d+)\\]",
+"|",
+"\\bGID-[A-Z]+\\s*\\d+\\b",
+"|",
+"\\bTS\\s*ID\\s*\\d+\\b",
+"|",
+"\\bID\\s*\\d+\\b",
+")",
+"\\s*"
+),
+ignore_case = TRUE
+)
+)
+) %>%
+
+# Remove extra spaces left after deleting IDs
+
+mutate(
+Title = str_squish(Title)
+) %>%
+
+# ---- Format the link ----
+
+mutate(
+Link = case_when(
+!is.na(Link) & str_starts(Link, "\\(http") ~ Link,
+
+!is.na(Link) & str_starts(Link, "http") ~
+paste0("(", Link, ")"),
+
+TRUE ~
+" **MANUALLY CHECK THIS LINE AND THE ONE ABOVE**"
+)
+) %>%
+
+# ---- Format the title ----
+
+mutate(
+Title = paste0("[", Title, "]")
+) %>%
+
+# Combine title and link so the cleaned title is clickable
+
+unite(
+Title,
+Title,
+Link,
+sep = "",
+na.rm = TRUE
+) %>%
+
+# ---- Format the URL identifier ----
+
+mutate(
+URL_ID = case_when(
+!is.na(URL_ID) & URL_ID != "" ~
+paste0(". ", URL_ID),
+
+TRUE ~ ""
+)
+) %>%
+
+# ---- Clean decision fields ----
+
+mutate(
+Decision = str_squish(Decision),
+`Decision date` = str_squish(`Decision date`)
+) %>%
+
+# ---- Format decision text ----
+
+mutate(
+Decision = case_when(
+
+# Blank decision
+is.na(Decision) |
+Decision == "" ~ "",
+
+# Awaiting decision does not receive "Decision:"
+str_detect(
+Decision,
+regex(
+"^awaiting decision$",
+ignore_case = TRUE
+)
+) ~
+". Awaiting decision",
+
+# All other decisions receive "Decision:"
+TRUE ~
+paste0(
+". Decision: ",
+str_to_sentence(Decision)
+)
+)
+) %>%
+
+# ---- Format decision date ----
+
+mutate(
+`Decision date` = case_when(
+
+# Blank date
+is.na(`Decision date`) |
+`Decision date` == "" ~ "",
+
+# Placeholder values are omitted completely
+str_detect(
+`Decision date`,
+regex(
+paste0(
+"^(",
+"tbc",
+"|to be confirmed",
+"|not yet confirmed",
+"|not confirmed",
+"|pending",
+"|awaiting",
+"|n/?a",
+"|none",
+"|unknown",
+"|-",
+"|–",
+"|—",
+")$"
+),
+ignore_case = TRUE
+)
+) ~ "",
+
+# Valid date
+TRUE ~
+paste0(
+". Decision date: ",
+`Decision date`
+)
+)
+) %>%
+
+# ---- Create final merged output ----
+
+unite(
+Merged,
+Title,
+URL_ID,
+Decision,
+`Decision date`,
+sep = "",
+na.rm = TRUE
+) %>%
+
+select(Merged)
+
+df
+}
+
+reformat_terminated <- function(df) {
+
+  df <- df %>%
+
+    # To create our titles with links this code:
+    # Adds brackets to the start and end of the existing URLs,
+    # Adds square brackets to the titles
+    # Merges the two columns with unite.
+
+    mutate(Link = str_replace(Link, "^", "(")) %>%
+    mutate(Link = str_replace(Link, "$", ")")) %>%
+    mutate(Title = str_replace(Title, "^", "[")) %>%
+    mutate(Title = str_replace(Title, "$", "]")) %>%
+
+    # Some entries are split across two rows for reasons that we don't understand.
+    # The next chunk of code is designed to identify these and add a note that they need manually checking.
+
+    mutate(
+      Link = case_when(
+        !is.na(Link) & str_starts(Link, "\\(http") ~ Link,
+        !is.na(Link) & str_starts(Link, "http") ~ paste0("(", Link, ")"),
+        TRUE ~ " **MANUALLY CHECK THIS LINE AND THE ONE ABOVE**"
+      )
+    ) %>%
+
+    unite(Title, Title, Link, sep = "", na.rm = TRUE) %>%
+
+    # "NICE guideline NG/CG/QS/TA.." is added before the reference number
+    # e.g. NG215 will become "NICE guideline NG215"
+
+    mutate(`Reference number` = str_replace_all(`Reference number`, "^NG", "NICE guideline NG")) %>%
+    mutate(`Reference number` = str_replace_all(`Reference number`, "^CG", "NICE guideline CG")) %>%
+    mutate(`Reference number` = str_replace_all(`Reference number`, "^QS", "NICE quality standard ")) %>%
+    mutate(`Reference number` = str_replace_all(`Reference number`, "^TA", "NICE technology appraisal guidance ")) %>%
+    mutate(`Reference number` = str_replace_all(`Reference number`, "^IPG", "NICE interventional procedures guidance ")) %>%
+    mutate(`Reference number` = str_replace_all(`Reference number`, "^DG", "NICE diagnostics guidance ")) %>%
+    mutate(`Reference number` = str_replace_all(`Reference number`, "^HST", "NICE highly specialised technologies guidance ")) %>%
+    mutate(`Reference number` = str_replace_all(`Reference number`, "^MTG", "NICE medical technologies guidance ")) %>%
+    mutate(`Reference number` = str_replace_all(`Reference number`, "^MPG", "NICE medicines practice guideline ")) %>%
+    mutate(`Reference number` = str_replace_all(`Reference number`, "^HTE", "NICE health technology evaluation ")) %>%
+    mutate(`Reference number` = str_replace_all(`Reference number`, "^HTG", "NICE healthtech guidance ")) %>%
+    mutate(`Reference number` = str_replace_all(`Reference number`, "^CSG", "NICE cancer service guideline ")) %>%
+    mutate(`Reference number` = str_replace_all(`Reference number`, "^PH", "NICE guideline ")) %>%
+    mutate(`Reference number` = str_replace_all(`Reference number`, "^SG", "NICE safe staffing guideline ")) %>%
+    mutate(`Reference number` = str_replace_all(`Reference number`, "^SC", "NICE social care guideline ")) %>%
+    mutate(`Reference number` = str_replace_all(`Reference number`, "^ES", "NICE evidence summary ES")) %>%
+    mutate(`Reference number` = str_replace_all(`Reference number`, "^MIB", "NICE medtech innovation briefing ")) %>%
+    mutate(`Reference number` = str_replace_all(`Reference number`, "^ESNM", "NICE evidence summary ESNM")) %>%
+    mutate(`Reference number` = str_replace_all(`Reference number`, "^ESUOM", "NICE evidence summary ESUOM")) %>%
+    mutate(`Reference number` = str_replace_all(`Reference number`, "^ESMPB", "NICE evidence summary ESMPB")) %>%
+
+# Keep original terminated date
+
+mutate(`Terminated date full` = `Terminated date`) %>%
+
+# Create year from terminated date
+
+mutate(`Terminated year` =
+         format(dmy(`Terminated date`), "%Y")) %>%
+
+# Put brackets around year
+
+mutate(`Terminated year` =
+         paste0("(", `Terminated year`, ")")) %>%
+
+# Format full terminated date text
+
+mutate(`Terminated date full` =
+         paste0("Terminated date: ",
+`Terminated date full`)) %>%
+
+# Create final merged output
+
+mutate(Merged = "") %>%
+
+unite(
+Merged,
+Merged,
+Title,
+`Terminated year`,
+`Reference number`,
+sep = " ",
+na.rm = TRUE
+) %>%
+
+mutate(
+Merged = paste0(
+Merged,
+". ",
+`Terminated date full`
+)
+)
 }
 
 ```
@@ -452,6 +847,7 @@ development_list <- list()
 deferred_list    <- list()
 awaiting_list    <- list()
 prioritisation_list  <- list ()
+terminated_list <- list()
 
 for (f in text_files) {
 
@@ -475,9 +871,16 @@ if ("Published" %in% cols) {
 
   deferred_list[[basename(f)]] <- reformat_deferred(df)
 
-} else if ("Decision date" %in% cols) {
+} else if ("Terminated date" %in% cols) {
 
-  prioritisation_list[[basename(f)]] <- reformat_prioritisation(df)
+terminated_list[[basename(f)]] <- reformat_terminated(df)  
+  
+} else if (
+"Decision date" %in% cols ||
+"Decision" %in% cols
+) {
+
+prioritisation_list[[basename(f)]] <- reformat_prioritisation(df)
 
 } else if (
   "Title" %in% cols &&
@@ -501,25 +904,63 @@ if ("Published" %in% cols) {
 library(tibble)
 
 # ----- Published -----
+# ----- Published -----
 published_df <- bind_rows(published_list)
 
 if (!"Merged" %in% names(published_df)) {
   published_df <- tibble(Merged = character())
 } else {
   published_df <- published_df %>%
-    filter(!is.na(Merged), str_trim(Merged) != "") %>%
-    mutate(FirstYear = str_extract(Merged, "\\(20\\d\\d\\)")) %>%
-    group_by(FirstYear) %>%
-    arrange(
-      desc(str_detect(Merged, "technology appraisal")),
-      desc(str_detect(Merged, "highly specialised")),
-      desc(str_detect(Merged, "NICE guideline")),
-      desc(str_detect(Merged, "healthtech guidance")),
-      desc(str_detect(Merged, "interventional procedures")),
-      desc(str_detect(Merged, "quality standard"))
+    filter(
+      !is.na(Merged),
+      str_trim(Merged) != ""
     ) %>%
-    ungroup() %>%
-    select(-FirstYear)
+
+    # Create the guidance-type ranking
+    mutate(
+      GuidanceRank = case_when(
+        str_detect(
+          Merged,
+          regex("technology appraisal", ignore_case = TRUE)
+        ) ~ 1L,
+
+        str_detect(
+          Merged,
+          regex("highly specialised", ignore_case = TRUE)
+        ) ~ 2L,
+
+        str_detect(
+          Merged,
+          regex("NICE guideline", ignore_case = TRUE)
+        ) ~ 3L,
+
+        str_detect(
+          Merged,
+          regex("healthtech guidance", ignore_case = TRUE)
+        ) ~ 4L,
+
+        str_detect(
+          Merged,
+          regex("interventional procedures", ignore_case = TRUE)
+        ) ~ 5L,
+
+        str_detect(
+          Merged,
+          regex("quality standard", ignore_case = TRUE)
+        ) ~ 6L,
+
+        TRUE ~ 7L
+      )
+    ) %>%
+
+    # Rank guidance types first, then newest date within each type
+    arrange(
+      GuidanceRank,
+      desc(SortDate),
+      Merged
+    ) %>%
+
+    select(Merged)
 }
 
 # ----- In development -----
@@ -561,6 +1002,20 @@ if (!"Merged" %in% names(prioritisation_df)) {
   prioritisation_df <- prioritisation_df %>%
     filter(!is.na(Merged), str_trim(Merged) != "")
 }
+
+# ----- Terminated -----
+terminated_df <- bind_rows(terminated_list)
+
+if (!"Merged" %in% names(terminated_df)) {
+terminated_df <- tibble(Merged = character())
+} else {
+terminated_df <- terminated_df %>%
+filter(
+!is.na(Merged),
+str_trim(Merged) != ""
+) %>%
+arrange(desc(dmy(`Terminated date`)))
+}
 ```
 
 ## Published
@@ -574,6 +1029,23 @@ if (nrow(published_df) > 0) {
 ```
 
 ```{r spacer_after_published, echo=FALSE, results='asis'}
+cat("\n\n\n")
+```
+
+## Terminated
+
+```{r terminated, echo=FALSE, results='asis'}
+if (nrow(terminated_df) > 0) {
+kable(
+terminated_df["Merged"],
+col.names = NULL
+)
+} else {
+cat("Nothing found")
+}
+```
+
+```{r spacer_after_terminated, echo=FALSE, results='asis'}
 cat("\n\n\n")
 ```
 
@@ -591,7 +1063,23 @@ if (nrow(development_df) > 0) {
 cat("\n\n\n")
 ```
 
-## Awaiting development
+## Suspended
+
+*Open all 'In development' links created using the code after pasting into this scoping page to confirm whether the topic is still in development or is now suspended or discontinued. Where a topic is shown as suspended move to this section. Add a brief explanation of why the topic was suspended based on the information on the website.*
+
+```{r spacer_after_suspended, echo=FALSE, results='asis'}
+cat("\n\n\n")
+```
+
+## Discontinued
+
+*Where a topic is shown as discontinued move to this section. Add a brief explanation of why the topic was discontinued based on the information on the website.*
+
+```{r spacer_after_discontinued, echo=FALSE, results='asis'}
+cat("\n\n\n")
+```
+
+## Awaiting development 
 
 ```{r awaiting, echo=FALSE, results='asis'}
 if (nrow(awaiting_df) > 0) {
@@ -629,30 +1117,33 @@ if (nrow(prioritisation_df) > 0) {
 }
 ```
 
-
 ```{r ensure-dfs, echo=FALSE}
 library(tibble)
 
 if (!exists("published_df")) {
-  published_df <- tibble(Merged = character())
+published_df <- tibble(Merged = character())
 }
 
 if (!exists("development_df")) {
-  development_df <- tibble(Merged = character())
+development_df <- tibble(Merged = character())
 }
 
 if (!exists("deferred_df")) {
-  deferred_df <- tibble(Merged = character())
+deferred_df <- tibble(Merged = character())
 }
 
 if (!exists("awaiting_df")) {
-  awaiting_df <- tibble(Merged = character())
+awaiting_df <- tibble(Merged = character())
+}
 
 if (!exists("prioritisation_df")) {
-  prioritisation_df <- tibble(Merged = character())
-}  
-  
+prioritisation_df <- tibble(Merged = character())
 }
+
+if (!exists("terminated_df")) {
+terminated_df <- tibble(Merged = character())
+}  
+
 ```
 
 
